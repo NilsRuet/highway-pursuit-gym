@@ -45,10 +45,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="D3D8.cs" />
+    <Compile Include="Injected\CheatService.cs" />
+    <Compile Include="Injected\D3D8Service.cs" />
+    <Compile Include="Injected\IHookManager.cs" />
+    <Compile Include="Injected\MemoryAdresses.cs" />
+    <Compile Include="Injected\UpdateService.cs" />
+    <Compile Include="Injected\GameManager.cs" />
+    <Compile Include="Injected\ScoreService.cs" />
     <Compile Include="InjectionEntryPoint.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ServerInterface.cs" />
+    <Compile Include="Server\ServerInterface.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="EasyHook32.dll">
