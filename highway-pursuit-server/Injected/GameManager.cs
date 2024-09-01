@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using EasyHook;
 
@@ -20,9 +21,15 @@ namespace HighwayPursuitServer.Injected
         private readonly UpdateService _updateService;
         private readonly Direct3D8Service _direct3D8Service;
         private readonly CheatService _cheatService;
+        private readonly Semaphore _lockUpdatePool; // Update thread waits for this
+        private readonly Semaphore _lockServerPool; // Server thread waits for this
 
         public GameManager(Action<string> reportCallback)
         {
+            // Init the update semaphore
+            _lockUpdatePool = new Semaphore(initialCount: 1, maximumCount: 1);
+            _lockServerPool = new Semaphore(initialCount: 0, maximumCount: 1);
+
             // Init the report function
             Report = reportCallback;
 
@@ -44,12 +51,23 @@ namespace HighwayPursuitServer.Injected
             // Init services & hooks
             const float FPS = 60.0f;
             const long PCFrequency = 1000000;
-            _updateService = new UpdateService(this, FPS, PCFrequency);
+            _updateService = new UpdateService(this, _lockServerPool, _lockUpdatePool, FPS, PCFrequency);
             _cheatService = new CheatService(this);
             _direct3D8Service = new Direct3D8Service(this);
 
             // Activate hooks on all threads except the current thread
             ActivateHooks();
+            Task.Run(Run);
+        }
+
+        private void Run()
+        {
+            while (true)
+            {
+                _lockServerPool.WaitOne();
+                _updateService.Step();
+                _lockUpdatePool.Release();
+            }
         }
 
         private void ActivateHooks()

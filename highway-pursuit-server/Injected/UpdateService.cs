@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace HighwayPursuitServer.Injected
@@ -15,10 +16,14 @@ namespace HighwayPursuitServer.Injected
         private readonly long _performanceCounterFrequency; // Emulated performance counter frequency
         private readonly long _counterTicksPerFrame; // Number of performance counter ticks between each frame
         private long _performanceCount; // Most recently provided performance counter value
+        private readonly Semaphore _lockServerPool;
+        private readonly Semaphore _lockUpdatePool;
 
-        public UpdateService(IHookManager hookManager, float FPS, long performanceCounterFrequency)
+        public UpdateService(IHookManager hookManager, Semaphore lockServerPool, Semaphore lockUpdatePool, float FPS, long performanceCounterFrequency)
         {
             this._hookManager = hookManager;
+            this._lockServerPool = lockServerPool;
+            this._lockUpdatePool = lockUpdatePool;
             this._FPS = FPS;
             this._performanceCounterFrequency = performanceCounterFrequency;
             this._performanceCount = 0;
@@ -28,7 +33,7 @@ namespace HighwayPursuitServer.Injected
 
         public void Step()
         {
-            this._performanceCount += _counterTicksPerFrame;
+            _performanceCount += _counterTicksPerFrame;
         }
 
         #region Hooking
@@ -69,9 +74,9 @@ namespace HighwayPursuitServer.Injected
 
         void Update_Hook()
         {
-            // TODO: synchronisation mechanism to avoid calling update
-            Step(); // TODO: temp test, the game speeds up
+            this._lockUpdatePool.WaitOne();
             Update();
+            this._lockServerPool.Release();
         }
         #endregion
 

@@ -15,6 +15,10 @@ namespace HighwayPursuitServer.Injected
         #endregion
         #region d3d8.dll
         public const uint CREATE_SURFACE_IMAGE_OFFSET = 0x2B6F0;
+        public const uint GET_FRONT_BUFFER_OFFSET = 0x2C220;
+        public const uint LOCK_RECT_OFFSET = 0x27E50;
+        public const uint UNLOCK_RECT_OFFSET = 0x27F30;
+        public const uint SURFACE_RELEASE_OFFSET = 0x24140;
         #endregion
     }
 }

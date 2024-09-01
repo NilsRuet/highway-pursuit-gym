@@ -7,24 +7,53 @@ using System.Threading.Tasks;
 
 namespace HighwayPursuitServer.Injected
 {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct D3DLOCKED_RECT
+    {
+        public int Pitch;
+        public IntPtr pBits;
+    }
+
     class Direct3D8Service
     {
         private readonly IHookManager _hookManager;
+        private IntPtr pSurface = IntPtr.Zero;
+
+        public IntPtr Device => GetDevice();
+
         public Direct3D8Service(IHookManager hookManager)
         {
             this._hookManager = hookManager;
             this.RegisterFunctions();
         }
 
+        private void EnsureSurface()
+        {
+            uint pSurfaceValue = 0;
+            uint width = 84, height = 84;
+            IDirect3DDevice8.CreateImageSurface(Device, width, height, (uint)D3DFORMAT.D3DFMT_X8R8G8B8, ref pSurfaceValue);
+            pSurface = new IntPtr(pSurfaceValue);
+        }
+
+        ~Direct3D8Service()
+        {
+            if(pSurface != IntPtr.Zero)
+            {
+                IDirect3DSurface8.Release(pSurface);
+            }
+        }
+
         public void Screenshot()
         {
-            uint pSurface = 0;
-            CreateImageSurface(GetDevice(), 10u, 10u, (uint)D3DFORMAT.D3DFMT_A8R8G8B8, ref pSurface);
-            //device->GetFrontBuffer(pSurface);
-            //D3DLOCKED_RECT lockedRect;
-            //pSurface->LockRect(&lockedRect, NULL, D3DLOCK_READONLY);
-            //pSurface->UnlockRect();
-            //pSurface->Release();
+            EnsureSurface();
+
+            IDirect3DDevice8.GetFrontBuffer(GetDevice(), pSurface);
+            var lockedRect = new D3DLOCKED_RECT();
+            IDirect3DSurface8.LockRect(pSurface, ref lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY);
+            
+            // TODO stuff
+
+            IDirect3DSurface8.UnlockRect(pSurface);
         }
 
         #region Hooking
@@ -34,15 +63,26 @@ namespace HighwayPursuitServer.Injected
 
             // Create image surface
             IntPtr createImageSurfacePtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.CREATE_SURFACE_IMAGE_OFFSET);
-            CreateImageSurface = Marshal.GetDelegateForFunctionPointer<CreateImageSurface_delegate>(createImageSurfacePtr);
+            IDirect3DDevice8.CreateImageSurface = Marshal.GetDelegateForFunctionPointer<CreateImageSurface_delegate>(createImageSurfacePtr);
+
+            // Get front buffer
+            IntPtr getFrontBufferPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.GET_FRONT_BUFFER_OFFSET);
+            IDirect3DDevice8.GetFrontBuffer = Marshal.GetDelegateForFunctionPointer<GetFrontBuffer_delegate>(getFrontBufferPtr);
+
+            // Lock rect
+            IntPtr lockRectPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.LOCK_RECT_OFFSET);
+            IDirect3DSurface8.LockRect = Marshal.GetDelegateForFunctionPointer<LockRect_delegate>(lockRectPtr);
+
+            // Unlock rect
+            IntPtr unlockRectPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.UNLOCK_RECT_OFFSET);
+            IDirect3DSurface8.UnlockRect = Marshal.GetDelegateForFunctionPointer<UnlockRect_delegate>(unlockRectPtr);
+
+            // Release
+            IntPtr surfaceReleasePtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.SURFACE_RELEASE_OFFSET);
+            IDirect3DSurface8.Release = Marshal.GetDelegateForFunctionPointer<Release_delegate>(surfaceReleasePtr);
 
             // TODO: 
             //get render width/height
-            //device->GetFrontBuffer(pSurface);
-            //D3DLOCKED_RECT lockedRect;
-            //pSurface->LockRect(&lockedRect, NULL, D3DLOCK_READONLY);
-            //pSurface->UnlockRect();
-            //pSurface->Release();
         }
 
         private IntPtr GetDevice()
@@ -51,16 +91,55 @@ namespace HighwayPursuitServer.Injected
         }
 
         #region D3D8 Functions
-        static CreateImageSurface_delegate CreateImageSurface;
+        static class IDirect3DDevice8
+        {
+            public static CreateImageSurface_delegate CreateImageSurface;
+            public static GetFrontBuffer_delegate GetFrontBuffer;
+        }
+
+        static class IDirect3DSurface8
+        {
+            public static LockRect_delegate LockRect;
+            public static UnlockRect_delegate UnlockRect;
+            public static Release_delegate Release;
+        }
         #endregion
 
         #region delegates        
+        #region device methods
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U8)]
         delegate long CreateImageSurface_delegate(IntPtr pDevice, uint width, uint height, uint format, ref uint pSurface);
-        #endregion
 
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U8)]
+        delegate long GetFrontBuffer_delegate(IntPtr pDevice, IntPtr pSurface);
         #endregion
+        #region Surface methods
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U8)]
+        delegate long LockRect_delegate(IntPtr pSurface, ref D3DLOCKED_RECT pLockedRect, IntPtr pRect, ulong flags);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U8)]
+        delegate long UnlockRect_delegate(IntPtr pSurface);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U8)]
+        delegate long Release_delegate(IntPtr pSurface);
+        #endregion
+        #endregion
+        #endregion
+    }
+
+    [Flags]
+    enum LOCK_RECT_FLAGS : ulong
+    {
+        D3DLOCK_READONLY = 0x00000010L,
+        D3DLOCK_DISCARD = 0x00002000L,
+        D3DLOCK_NOOVERWRITE = 0x00001000L,
+        D3DLOCK_NOSYSLOCK = 0x00000800L,
+        D3DLOCK_NO_DIRTY_UPDATE = 0x00008000L
     }
 
     enum D3DFORMAT
