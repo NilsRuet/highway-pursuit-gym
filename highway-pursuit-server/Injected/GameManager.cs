@@ -13,7 +13,7 @@ namespace HighwayPursuitServer.Injected
     class GameManager : IHookManager
     {
         private const string _d3d8ModuleName = "d3d8.dll";
-
+        
         private readonly Action<string> Report;
         private readonly IntPtr _moduleBase;
         private readonly IntPtr _d3d8Base;
@@ -23,6 +23,7 @@ namespace HighwayPursuitServer.Injected
         private readonly CheatService _cheatService;
         private readonly Semaphore _lockUpdatePool; // Update thread waits for this
         private readonly Semaphore _lockServerPool; // Server thread waits for this
+        const int updateTimeout = 1000;
 
         public GameManager(Action<string> reportCallback)
         {
@@ -57,16 +58,26 @@ namespace HighwayPursuitServer.Injected
 
             // Activate hooks on all threads except the current thread
             ActivateHooks();
-            Task.Run(Run);
+
+            // Create the server thread
+            CancellationTokenSource cts = new CancellationTokenSource();
+            Task mainServerTask = Task.Run(() => ServerLoop(cts));
+            AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+            {
+                cts.Cancel();
+            };
         }
 
-        private void Run()
+        private void ServerLoop(CancellationTokenSource cts)
         {
-            while (true)
+            while (!cts.IsCancellationRequested)
             {
-                _lockServerPool.WaitOne();
-                _updateService.Step();
-                _lockUpdatePool.Release();
+                if (_lockServerPool.WaitOne(updateTimeout))
+                {
+                    _updateService.Step();
+                    _direct3D8Service.Screenshot();
+                    _lockUpdatePool.Release();
+                }
             }
         }
 
@@ -87,7 +98,7 @@ namespace HighwayPursuitServer.Injected
             }
 
             // Finalise cleanup of hooks
-            EasyHook.LocalHook.Release();
+            LocalHook.Release();
         }
 
         public void RegisterHook(IntPtr address, Delegate hookDelegate, object inCallback = null)

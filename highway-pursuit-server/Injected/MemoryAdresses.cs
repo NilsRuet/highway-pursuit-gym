@@ -8,7 +8,7 @@ namespace HighwayPursuitServer.Injected
 {
     static class MemoryAdresses
     {
-        #region Highway pursuit
+        #region HighwayPursuit.exe
         public const uint UPDATE_OFFSET = 0x29420;
         public const uint GET_LIFE_COUNT_OFFSET = 0x15C70;
         public const uint DEVICE_PTR_OFFSET = 0x960CC;

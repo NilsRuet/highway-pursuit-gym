@@ -29,10 +29,13 @@ namespace HighwayPursuitServer.Injected
 
         private void EnsureSurface()
         {
-            uint pSurfaceValue = 0;
-            uint width = 84, height = 84;
-            IDirect3DDevice8.CreateImageSurface(Device, width, height, (uint)D3DFORMAT.D3DFMT_X8R8G8B8, ref pSurfaceValue);
-            pSurface = new IntPtr(pSurfaceValue);
+            if(pSurface == IntPtr.Zero)
+            {
+                uint pSurfaceValue = 0;
+                uint width = 84, height = 84;
+                IDirect3DDevice8.CreateImageSurface(Device, width, height, (uint)D3DFORMAT.D3DFMT_X8R8G8B8, ref pSurfaceValue);
+                pSurface = new IntPtr(pSurfaceValue);
+            }
         }
 
         ~Direct3D8Service()
@@ -46,12 +49,10 @@ namespace HighwayPursuitServer.Injected
         public void Screenshot()
         {
             EnsureSurface();
-
-            IDirect3DDevice8.GetFrontBuffer(GetDevice(), pSurface);
+            IDirect3DDevice8.GetFrontBuffer(Device, pSurface);
             var lockedRect = new D3DLOCKED_RECT();
             IDirect3DSurface8.LockRect(pSurface, ref lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY);
-            
-            // TODO stuff
+            //TODO: do stuff!
 
             IDirect3DSurface8.UnlockRect(pSurface);
         }
