@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace HighwayPursuitServer.Injected
@@ -17,25 +18,13 @@ namespace HighwayPursuitServer.Injected
     class Direct3D8Service
     {
         private readonly IHookManager _hookManager;
-        private IntPtr pSurface = IntPtr.Zero;
-
         public IntPtr Device => GetDevice();
+        private IntPtr pSurface = IntPtr.Zero;
 
         public Direct3D8Service(IHookManager hookManager)
         {
             this._hookManager = hookManager;
             this.RegisterFunctions();
-        }
-
-        private void EnsureSurface()
-        {
-            if(pSurface == IntPtr.Zero)
-            {
-                uint pSurfaceValue = 0;
-                uint width = 84, height = 84;
-                IDirect3DDevice8.CreateImageSurface(Device, width, height, (uint)D3DFORMAT.D3DFMT_X8R8G8B8, ref pSurfaceValue);
-                pSurface = new IntPtr(pSurfaceValue);
-            }
         }
 
         ~Direct3D8Service()
@@ -46,14 +35,31 @@ namespace HighwayPursuitServer.Injected
             }
         }
 
+        private void EnsureSurface()
+        {
+            // TODO: Check surface width/height
+            if(pSurface == IntPtr.Zero)
+            {
+                // Create surface
+                uint pSurfaceValue = 0;
+                uint width = 640, height = 480;
+                IDirect3DDevice8.CreateImageSurface(Device, width, height, (uint)D3DFORMAT.D3DFMT_A8R8G8B8, ref pSurfaceValue);
+                pSurface = new IntPtr(pSurfaceValue);
+            }
+        }
+
         public void Screenshot()
         {
             EnsureSurface();
+            // Get buffer
             IDirect3DDevice8.GetFrontBuffer(Device, pSurface);
-            var lockedRect = new D3DLOCKED_RECT();
-            IDirect3DSurface8.LockRect(pSurface, ref lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY);
-            //TODO: do stuff!
 
+            // Lock pixels
+            IDirect3DSurface8.LockRect(pSurface, out D3DLOCKED_RECT lockedRect, IntPtr.Zero, (ulong)(LOCK_RECT_FLAGS.D3DLOCK_READONLY));
+
+            // TODO: do stuff!
+
+            // Release resources
             IDirect3DSurface8.UnlockRect(pSurface);
         }
 
@@ -109,25 +115,25 @@ namespace HighwayPursuitServer.Injected
         #region delegates        
         #region device methods
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.U8)]
-        delegate long CreateImageSurface_delegate(IntPtr pDevice, uint width, uint height, uint format, ref uint pSurface);
+        [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint CreateImageSurface_delegate(IntPtr pDevice, uint width, uint height, uint format, ref uint pSurface);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.U8)]
-        delegate long GetFrontBuffer_delegate(IntPtr pDevice, IntPtr pSurface);
+        [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint GetFrontBuffer_delegate(IntPtr pDevice, IntPtr pSurface);
         #endregion
         #region Surface methods
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.U8)]
-        delegate long LockRect_delegate(IntPtr pSurface, ref D3DLOCKED_RECT pLockedRect, IntPtr pRect, ulong flags);
+        [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint LockRect_delegate(IntPtr pSurface, out D3DLOCKED_RECT pLockedRect, IntPtr pRect, ulong flags);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.U8)]
-        delegate long UnlockRect_delegate(IntPtr pSurface);
+        [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint UnlockRect_delegate(IntPtr pSurface);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.U8)]
-        delegate long Release_delegate(IntPtr pSurface);
+        [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint Release_delegate(IntPtr pSurface);
         #endregion
         #endregion
         #endregion
