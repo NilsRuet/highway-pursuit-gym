@@ -7,8 +7,9 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using EasyHook;
+using HighwayPursuitServer.Injected;
 
-namespace HighwayPursuitServer.Injected
+namespace HighwayPursuitServer.Server
 {
     class GameManager : IHookManager
     {

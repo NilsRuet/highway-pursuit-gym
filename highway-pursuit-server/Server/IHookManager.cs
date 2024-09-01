@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace HighwayPursuitServer.Injected
+namespace HighwayPursuitServer.Server
 {
     interface IHookManager
     {
