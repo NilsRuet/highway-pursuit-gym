@@ -11,6 +11,7 @@ namespace HighwayPursuitServer.Injected
         #region HighwayPursuit.exe
         public const uint UPDATE_OFFSET = 0x29420;
         public const uint GET_LIFE_COUNT_OFFSET = 0x15C70;
+        public const uint SET_SCORE_OFFSET = 0x15C00;
         public const uint DEVICE_PTR_OFFSET = 0x960CC;
         #endregion
         #region d3d8.dll

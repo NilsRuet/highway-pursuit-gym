@@ -19,6 +19,7 @@ namespace HighwayPursuitServer.Injected
         private readonly IntPtr _d3d8Base;
         private readonly List<LocalHook> _hooks = new List<LocalHook>();
         private readonly UpdateService _updateService;
+        private readonly ScoreService _scoreService;
         private readonly Direct3D8Service _direct3D8Service;
         private readonly CheatService _cheatService;
         private readonly Semaphore _lockUpdatePool; // Update thread waits for this
@@ -53,6 +54,7 @@ namespace HighwayPursuitServer.Injected
             const float FPS = 60.0f;
             const long PCFrequency = 1000000;
             _updateService = new UpdateService(this, _lockServerPool, _lockUpdatePool, FPS, PCFrequency);
+            _scoreService = new ScoreService(this);
             _cheatService = new CheatService(this);
             _direct3D8Service = new Direct3D8Service(this);
 
@@ -76,6 +78,11 @@ namespace HighwayPursuitServer.Injected
                 {
                     _updateService.Step();
                     _direct3D8Service.Screenshot();
+                    var reward = _scoreService.PullReward();
+                    if(reward != 0)
+                    {
+                        Report($"Reward: {reward}");
+                    }
                     _lockUpdatePool.Release();
                 }
             }
