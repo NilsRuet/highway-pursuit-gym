@@ -15,6 +15,7 @@ namespace HighwayPursuitServer.Injected
         public const uint DEVICE_PTR_OFFSET = 0x960CC;
         #endregion
         #region d3d8.dll
+        public const uint GET_DISPLAY_MODE_OFFSET = 0x2A650;
         public const uint CREATE_SURFACE_IMAGE_OFFSET = 0x2B6F0;
         public const uint GET_FRONT_BUFFER_OFFSET = 0x2C220;
         public const uint LOCK_RECT_OFFSET = 0x27E50;

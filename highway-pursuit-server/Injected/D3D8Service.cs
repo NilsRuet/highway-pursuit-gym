@@ -14,6 +14,8 @@ namespace HighwayPursuitServer.Injected
         private readonly IHookManager _hookManager;
         public IntPtr Device => GetDevice();
         private IntPtr pSurface = IntPtr.Zero;
+        private uint _currentWidth = 0;
+        private uint _currentHeight = 0;
 
         public Direct3D8Service(IHookManager hookManager)
         {
@@ -39,17 +41,37 @@ namespace HighwayPursuitServer.Injected
 
         private void EnsureSurface()
         {
-            // TODO: Check surface width/height
-            if (pSurface == IntPtr.Zero)
+            // Get display mode
+            D3DDISPLAYMODE displayMode = new D3DDISPLAYMODE();
+            HandleDRDERR(IDirect3DDevice8.GetDisplayMode(Device, ref displayMode));
+
+            // Init width/height
+            if(_currentWidth == 0 && _currentHeight == 0)
             {
-                // Create surface
+                _currentWidth = displayMode.Width;
+                _currentHeight = displayMode.Height;
+            }
+
+            // Flag about creating a new surface
+            bool createSurface = (pSurface == IntPtr.Zero);
+
+            // Release the current surface, and set the flag to create a new one
+            if (_currentWidth != displayMode.Width || _currentHeight != displayMode.Height)
+            {
+                HandleDRDERR(IDirect3DSurface8.Release(pSurface));
+                createSurface = true;
+            }
+
+            // Create surface if necessary
+            if (createSurface)
+            {
                 uint pSurfaceValue = 0;
-                uint width = 640, height = 480;
-                HandleDRDERR(IDirect3DDevice8.CreateImageSurface(Device, width, height, (uint)D3DFORMAT.D3DFMT_A8R8G8B8, ref pSurfaceValue));
+                HandleDRDERR(IDirect3DDevice8.CreateImageSurface(Device, displayMode.Width, displayMode.Height, (uint)D3DFORMAT.D3DFMT_A8R8G8B8, ref pSurfaceValue));
                 pSurface = new IntPtr(pSurfaceValue);
+                _currentWidth = displayMode.Width;
+                _currentHeight = displayMode.Height;
             }
         }
-
         public void Screenshot()
         {
             EnsureSurface();
@@ -70,6 +92,10 @@ namespace HighwayPursuitServer.Injected
         {
             var d3d8 = _hookManager.GetD3D8Base();
 
+            // Get display mode
+            IntPtr getDisplayModeptr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.GET_DISPLAY_MODE_OFFSET);
+            IDirect3DDevice8.GetDisplayMode = Marshal.GetDelegateForFunctionPointer<GetDisplayMode_delegate>(getDisplayModeptr);
+
             // Create image surface
             IntPtr createImageSurfacePtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.CREATE_SURFACE_IMAGE_OFFSET);
             IDirect3DDevice8.CreateImageSurface = Marshal.GetDelegateForFunctionPointer<CreateImageSurface_delegate>(createImageSurfacePtr);
@@ -89,9 +115,6 @@ namespace HighwayPursuitServer.Injected
             // Release
             IntPtr surfaceReleasePtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.SURFACE_RELEASE_OFFSET);
             IDirect3DSurface8.Release = Marshal.GetDelegateForFunctionPointer<Release_delegate>(surfaceReleasePtr);
-
-            // TODO: 
-            //get render width/height
         }
 
         private IntPtr GetDevice()
@@ -102,6 +125,7 @@ namespace HighwayPursuitServer.Injected
         #region D3D8 Functions
         static class IDirect3DDevice8
         {
+            public static GetDisplayMode_delegate GetDisplayMode;
             public static CreateImageSurface_delegate CreateImageSurface;
             public static GetFrontBuffer_delegate GetFrontBuffer;
         }
@@ -116,6 +140,10 @@ namespace HighwayPursuitServer.Injected
 
         #region delegates        
         #region device methods
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint GetDisplayMode_delegate(IntPtr pDevice, ref D3DDISPLAYMODE pMode);
+
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
         delegate uint CreateImageSurface_delegate(IntPtr pDevice, uint width, uint height, uint format, ref uint pSurface);
@@ -142,7 +170,7 @@ namespace HighwayPursuitServer.Injected
     }
 
     #region enums & structs
-    class D3DERR : Exception
+    public class D3DERR : Exception
     {
         // Error is an hcode (32 bits uint) : (isError, faculty, code) with sizes 1,15,16.
         // Only the code is informative, so we mask with FFFF
@@ -156,8 +184,17 @@ namespace HighwayPursuitServer.Injected
         public IntPtr pBits;
     }
 
+    [StructLayout(LayoutKind.Sequential)]
+    public struct D3DDISPLAYMODE
+    {
+        public uint Width;
+        public uint Height;
+        public uint RefreshRate;
+        public D3DFORMAT Format;
+    };
+
     [Flags]
-    enum LOCK_RECT_FLAGS : ulong
+    public enum LOCK_RECT_FLAGS : ulong
     {
         D3DLOCK_READONLY = 0x00000010L,
         D3DLOCK_DISCARD = 0x00002000L,
@@ -166,7 +203,7 @@ namespace HighwayPursuitServer.Injected
         D3DLOCK_NO_DIRTY_UPDATE = 0x00008000L
     }
 
-    enum D3DFORMAT
+    public enum D3DFORMAT
     {
         D3DFMT_UNKNOWN = 0,
 
