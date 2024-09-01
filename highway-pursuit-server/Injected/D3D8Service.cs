@@ -76,7 +76,7 @@ namespace HighwayPursuitServer.Injected
         {
             EnsureSurface();
             // Get buffer
-            HandleDRDERR(IDirect3DDevice8.GetFrontBuffer(Device, pSurface));
+            HandleDRDERR(IDirect3DDevice8.GetFrontBuffer(Device, pSurface)); //TODO: try GetRenderTarget, which might be faster
 
             // Lock pixels
             HandleDRDERR(IDirect3DSurface8.LockRect(pSurface, out D3DLOCKED_RECT lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY));
