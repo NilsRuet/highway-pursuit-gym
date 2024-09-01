@@ -9,13 +9,6 @@ using System.Threading.Tasks;
 
 namespace HighwayPursuitServer.Injected
 {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct D3DLOCKED_RECT
-    {
-        public int Pitch;
-        public IntPtr pBits;
-    }
-
     class Direct3D8Service
     {
         private readonly IHookManager _hookManager;
@@ -30,21 +23,29 @@ namespace HighwayPursuitServer.Injected
 
         ~Direct3D8Service()
         {
-            if(pSurface != IntPtr.Zero)
+            if (pSurface != IntPtr.Zero)
             {
-                IDirect3DSurface8.Release(pSurface);
+                HandleDRDERR(IDirect3DSurface8.Release(pSurface));
+            }
+        }
+
+        private void HandleDRDERR(uint errorCode)
+        {
+            if (errorCode > 0)
+            {
+                throw new D3DERR(errorCode);
             }
         }
 
         private void EnsureSurface()
         {
             // TODO: Check surface width/height
-            if(pSurface == IntPtr.Zero)
+            if (pSurface == IntPtr.Zero)
             {
                 // Create surface
                 uint pSurfaceValue = 0;
                 uint width = 640, height = 480;
-                IDirect3DDevice8.CreateImageSurface(Device, width, height, (uint)D3DFORMAT.D3DFMT_A8R8G8B8, ref pSurfaceValue);
+                HandleDRDERR(IDirect3DDevice8.CreateImageSurface(Device, width, height, (uint)D3DFORMAT.D3DFMT_A8R8G8B8, ref pSurfaceValue));
                 pSurface = new IntPtr(pSurfaceValue);
             }
         }
@@ -53,15 +54,15 @@ namespace HighwayPursuitServer.Injected
         {
             EnsureSurface();
             // Get buffer
-            IDirect3DDevice8.GetFrontBuffer(Device, pSurface);
+            HandleDRDERR(IDirect3DDevice8.GetFrontBuffer(Device, pSurface));
 
             // Lock pixels
-            IDirect3DSurface8.LockRect(pSurface, out D3DLOCKED_RECT lockedRect, IntPtr.Zero, (ulong)(LOCK_RECT_FLAGS.D3DLOCK_READONLY));
+            HandleDRDERR(IDirect3DSurface8.LockRect(pSurface, out D3DLOCKED_RECT lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY));
 
             // TODO: do stuff!
 
             // Release resources
-            IDirect3DSurface8.UnlockRect(pSurface);
+            HandleDRDERR(IDirect3DSurface8.UnlockRect(pSurface));
         }
 
         #region Hooking
@@ -140,6 +141,21 @@ namespace HighwayPursuitServer.Injected
         #endregion
     }
 
+    #region enums & structs
+    class D3DERR : Exception
+    {
+        // Error is an hcode (32 bits uint) : (isError, faculty, code) with sizes 1,15,16.
+        // Only the code is informative, so we mask with FFFF
+        public D3DERR(uint errCode) : base($"D3DERR: code {errCode & 0xFFFF}") { }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct D3DLOCKED_RECT
+    {
+        public int Pitch;
+        public IntPtr pBits;
+    }
+
     [Flags]
     enum LOCK_RECT_FLAGS : ulong
     {
@@ -196,4 +212,5 @@ namespace HighwayPursuitServer.Injected
 
         D3DFMT_FORCE_DWORD = 0x7fffffff
     }
+    #endregion
 }

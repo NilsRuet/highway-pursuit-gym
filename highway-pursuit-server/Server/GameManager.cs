@@ -78,7 +78,13 @@ namespace HighwayPursuitServer.Server
                 if (_lockServerPool.WaitOne(updateTimeout))
                 {
                     _updateService.Step();
-                    _direct3D8Service.Screenshot();
+                    try
+                    {
+                        _direct3D8Service.Screenshot();
+                    } catch(D3DERR e)
+                    {
+                        Report(e.Message);
+                    }
                     var reward = _scoreService.PullReward();
                     if(reward != 0)
                     {
