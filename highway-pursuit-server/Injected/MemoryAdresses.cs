@@ -18,6 +18,8 @@ namespace HighwayPursuitServer.Injected
         public const uint GET_DISPLAY_MODE_OFFSET = 0x2A650;
         public const uint CREATE_SURFACE_IMAGE_OFFSET = 0x2B6F0;
         public const uint GET_FRONT_BUFFER_OFFSET = 0x2C220;
+        public const uint GET_BACK_BUFFER_OFFSET = 0x2A1F0;
+        public const uint COPY_RECTS_OFFSET = 0x2A880;
         public const uint LOCK_RECT_OFFSET = 0x27E50;
         public const uint UNLOCK_RECT_OFFSET = 0x27F30;
         public const uint SURFACE_RELEASE_OFFSET = 0x24140;

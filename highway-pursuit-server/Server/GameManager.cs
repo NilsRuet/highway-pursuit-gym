@@ -75,23 +75,22 @@ namespace HighwayPursuitServer.Server
         {
             while (!cts.IsCancellationRequested)
             {
-                if (_lockServerPool.WaitOne(updateTimeout))
+                _lockServerPool.WaitOne();
+                _updateService.Step();
+                try
                 {
-                    _updateService.Step();
-                    try
-                    {
-                        _direct3D8Service.Screenshot();
-                    } catch(D3DERR e)
-                    {
-                        Report(e.Message);
-                    }
-                    var reward = _scoreService.PullReward();
-                    if(reward != 0)
-                    {
-                        Report($"Reward: {reward}");
-                    }
-                    _lockUpdatePool.Release();
+                     _direct3D8Service.Screenshot();
+                } catch(D3DERR e)
+                {
+                    Report(e.Message);
                 }
+                var reward = _scoreService.PullReward();
+                if(reward != 0)
+                {
+                    Report($"Reward: {reward}");
+                }
+
+                _lockUpdatePool.Release();
             }
         }
 

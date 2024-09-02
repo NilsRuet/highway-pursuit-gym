@@ -46,7 +46,7 @@ namespace HighwayPursuitServer.Injected
             HandleDRDERR(IDirect3DDevice8.GetDisplayMode(Device, ref displayMode));
 
             // Init width/height
-            if(_currentWidth == 0 && _currentHeight == 0)
+            if (_currentWidth == 0 && _currentHeight == 0)
             {
                 _currentWidth = displayMode.Width;
                 _currentHeight = displayMode.Height;
@@ -66,25 +66,32 @@ namespace HighwayPursuitServer.Injected
             if (createSurface)
             {
                 uint pSurfaceValue = 0;
-                HandleDRDERR(IDirect3DDevice8.CreateImageSurface(Device, displayMode.Width, displayMode.Height, (uint)D3DFORMAT.D3DFMT_A8R8G8B8, ref pSurfaceValue));
+                HandleDRDERR(IDirect3DDevice8.CreateImageSurface(Device, displayMode.Width, displayMode.Height, (uint)D3DFORMAT.D3DFMT_X8R8G8B8, ref pSurfaceValue));
                 pSurface = new IntPtr(pSurfaceValue);
                 _currentWidth = displayMode.Width;
                 _currentHeight = displayMode.Height;
             }
         }
+
         public void Screenshot()
         {
             EnsureSurface();
-            // Get buffer
-            HandleDRDERR(IDirect3DDevice8.GetFrontBuffer(Device, pSurface)); //TODO: try GetRenderTarget, which might be faster
+
+            // Back buffer method
+            uint pBackBufferSurfaceValue = 0;
+            HandleDRDERR(IDirect3DDevice8.GetBackBuffer(Device, 0, D3DBACKBUFFER_TYPE.TYPE_MONO, ref pBackBufferSurfaceValue));
+            IntPtr pBackBufferSurface = new IntPtr(pBackBufferSurfaceValue);
+
+            HandleDRDERR(IDirect3DDevice8.CopyRects(Device, pBackBufferSurface, IntPtr.Zero, 0, pSurface, IntPtr.Zero));
 
             // Lock pixels
             HandleDRDERR(IDirect3DSurface8.LockRect(pSurface, out D3DLOCKED_RECT lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY));
 
-            // TODO: do stuff!
+            ////// TODO: do stuff!
 
-            // Release resources
+            ////// Release resources
             HandleDRDERR(IDirect3DSurface8.UnlockRect(pSurface));
+            HandleDRDERR(IDirect3DSurface8.Release(pBackBufferSurface));
         }
 
         #region Hooking
@@ -103,6 +110,14 @@ namespace HighwayPursuitServer.Injected
             // Get front buffer
             IntPtr getFrontBufferPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.GET_FRONT_BUFFER_OFFSET);
             IDirect3DDevice8.GetFrontBuffer = Marshal.GetDelegateForFunctionPointer<GetFrontBuffer_delegate>(getFrontBufferPtr);
+
+            // Get back buffer
+            IntPtr getBackBufferPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.GET_BACK_BUFFER_OFFSET);
+            IDirect3DDevice8.GetBackBuffer = Marshal.GetDelegateForFunctionPointer<GetBackBuffer_delegate>(getBackBufferPtr);
+
+            // Copy rects
+            IntPtr copyRectsPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.COPY_RECTS_OFFSET);
+            IDirect3DDevice8.CopyRects = Marshal.GetDelegateForFunctionPointer<CopyRects_delegate>(copyRectsPtr);
 
             // Lock rect
             IntPtr lockRectPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.LOCK_RECT_OFFSET);
@@ -128,6 +143,8 @@ namespace HighwayPursuitServer.Injected
             public static GetDisplayMode_delegate GetDisplayMode;
             public static CreateImageSurface_delegate CreateImageSurface;
             public static GetFrontBuffer_delegate GetFrontBuffer;
+            public static GetBackBuffer_delegate GetBackBuffer;
+            public static CopyRects_delegate CopyRects;
         }
 
         static class IDirect3DSurface8
@@ -150,7 +167,16 @@ namespace HighwayPursuitServer.Injected
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint GetBackBuffer_delegate(IntPtr pDevice, uint backBuffer, D3DBACKBUFFER_TYPE type, ref uint pSurface);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U4)]
         delegate uint GetFrontBuffer_delegate(IntPtr pDevice, IntPtr pSurface);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint CopyRects_delegate(IntPtr pDevice, IntPtr pSourceSurface, IntPtr pSourceRectsArray, uint cRects, IntPtr pDestinationSurface, IntPtr pDestPointsArray);
+
         #endregion
         #region Surface methods
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -192,6 +218,15 @@ namespace HighwayPursuitServer.Injected
         public uint RefreshRate;
         public D3DFORMAT Format;
     };
+
+    public enum D3DBACKBUFFER_TYPE
+    {
+        TYPE_MONO = 0,
+        LEFT = 1,
+        RIGHT = 2,
+        FORCE_DWORD = 0x7fffffff
+    }
+
 
     [Flags]
     public enum LOCK_RECT_FLAGS : ulong
