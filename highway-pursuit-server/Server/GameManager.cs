@@ -25,7 +25,6 @@ namespace HighwayPursuitServer.Server
         private readonly CheatService _cheatService;
         private readonly Semaphore _lockUpdatePool; // Update thread waits for this
         private readonly Semaphore _lockServerPool; // Server thread waits for this
-        const int updateTimeout = 1000;
 
         public GameManager(Action<string> reportCallback)
         {
