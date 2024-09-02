@@ -81,7 +81,7 @@ namespace HighwayPursuitServer.Server
                 _updateService.Step();
                 try
                 {
-                     _direct3D8Service.Screenshot();
+                    _direct3D8Service.Screenshot();
                 } catch(D3DERR e)
                 {
                     Report(e.Message);
@@ -89,13 +89,12 @@ namespace HighwayPursuitServer.Server
 
                 // Time measurement stuff
                 loopCount++;
-                if (loopCount == 100)
+                if (loopCount % 100 == 0)
                 {
                     long elapsedTicks = Environment.TickCount - startTick;
                     var tps = 100.0 / (elapsedTicks / 1000.0);
                     var ratio = tps / 60.0;
                     Report($"ticks/s: {tps:0} = x{ratio:0.#}");
-                    loopCount = 0;
                     startTick = Environment.TickCount;
                 }
 
