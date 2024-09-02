@@ -87,9 +87,9 @@ namespace HighwayPursuitServer.Injected
             // Lock pixels
             HandleDRDERR(IDirect3DSurface8.LockRect(pSurface, out D3DLOCKED_RECT lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY));
 
-            ////// TODO: do stuff!
+            // TODO: do stuff!
 
-            ////// Release resources
+            // Release resources
             HandleDRDERR(IDirect3DSurface8.UnlockRect(pSurface));
             HandleDRDERR(IDirect3DSurface8.Release(pBackBufferSurface));
         }
@@ -106,10 +106,6 @@ namespace HighwayPursuitServer.Injected
             // Create image surface
             IntPtr createImageSurfacePtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.CREATE_SURFACE_IMAGE_OFFSET);
             IDirect3DDevice8.CreateImageSurface = Marshal.GetDelegateForFunctionPointer<CreateImageSurface_delegate>(createImageSurfacePtr);
-
-            // Get front buffer
-            IntPtr getFrontBufferPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.GET_FRONT_BUFFER_OFFSET);
-            IDirect3DDevice8.GetFrontBuffer = Marshal.GetDelegateForFunctionPointer<GetFrontBuffer_delegate>(getFrontBufferPtr);
 
             // Get back buffer
             IntPtr getBackBufferPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.GET_BACK_BUFFER_OFFSET);
@@ -142,7 +138,6 @@ namespace HighwayPursuitServer.Injected
         {
             public static GetDisplayMode_delegate GetDisplayMode;
             public static CreateImageSurface_delegate CreateImageSurface;
-            public static GetFrontBuffer_delegate GetFrontBuffer;
             public static GetBackBuffer_delegate GetBackBuffer;
             public static CopyRects_delegate CopyRects;
         }
@@ -168,10 +163,6 @@ namespace HighwayPursuitServer.Injected
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
         delegate uint GetBackBuffer_delegate(IntPtr pDevice, uint backBuffer, D3DBACKBUFFER_TYPE type, ref uint pSurface);
-
-        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        [return: MarshalAs(UnmanagedType.U4)]
-        delegate uint GetFrontBuffer_delegate(IntPtr pDevice, IntPtr pSurface);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
