@@ -73,6 +73,8 @@ namespace HighwayPursuitServer.Server
 
         private void ServerLoop(CancellationTokenSource cts)
         {
+            int loopCount = 0;
+            int startTick = Environment.TickCount;
             while (!cts.IsCancellationRequested)
             {
                 _lockServerPool.WaitOne();
@@ -84,10 +86,17 @@ namespace HighwayPursuitServer.Server
                 {
                     Report(e.Message);
                 }
-                var reward = _scoreService.PullReward();
-                if(reward != 0)
+
+                // Time measurement stuff
+                loopCount++;
+                if (loopCount == 100)
                 {
-                    Report($"Reward: {reward}");
+                    long elapsedTicks = Environment.TickCount - startTick;
+                    var tps = 100.0 / (elapsedTicks / 1000.0);
+                    var ratio = tps / 60.0;
+                    Report($"ticks/s: {tps:0} = x{ratio:0.#}");
+                    loopCount = 0;
+                    startTick = Environment.TickCount;
                 }
 
                 _lockUpdatePool.Release();
