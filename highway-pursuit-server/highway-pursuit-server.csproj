@@ -48,6 +48,7 @@
     <Compile Include="Injected\InputService.cs" />
     <Compile Include="Injected\CheatService.cs" />
     <Compile Include="Injected\D3D8Service.cs" />
+    <Compile Include="Server\HookManager.cs" />
     <Compile Include="Server\IHookManager.cs" />
     <Compile Include="Injected\MemoryAdresses.cs" />
     <Compile Include="Injected\UpdateService.cs" />

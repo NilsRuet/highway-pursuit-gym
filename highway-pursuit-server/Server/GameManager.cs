@@ -11,16 +11,10 @@ using HighwayPursuitServer.Injected;
 
 namespace HighwayPursuitServer.Server
 {
-    class GameManager : IHookManager
+    class GameManager
     {
-        private const string _d3d8ModuleName = "d3d8.dll";
-        private const string _dinputModuleName = "DINPUT8.dll";
-
         private readonly Action<string> Report;
-        private readonly IntPtr _moduleBase;
-        private readonly IntPtr _d3d8Base;
-        private readonly IntPtr _dinputBase;
-        private readonly List<LocalHook> _hooks = new List<LocalHook>();
+        private readonly IHookManager _hookManager;
         private readonly UpdateService _updateService;
         private readonly ScoreService _scoreService;
         private readonly CheatService _cheatService;
@@ -38,36 +32,18 @@ namespace HighwayPursuitServer.Server
             // Init the report function
             Report = reportCallback;
 
-            // Modules for custom functions
-            _moduleBase = Process.GetCurrentProcess().MainModule.BaseAddress;
-
-            // D3D8 & DINPUT
-            _d3d8Base = new IntPtr(0);
-            _dinputBase = new IntPtr(0);
-            foreach (ProcessModule module in Process.GetCurrentProcess().Modules)
-            {
-                if (module.ModuleName.Equals(_d3d8ModuleName))
-                {
-                    _d3d8Base = module.BaseAddress;
-                } else if (module.ModuleName.Equals(_dinputModuleName))
-                {
-                    _dinputBase = module.BaseAddress;
-                }
-            }
-            if (_d3d8Base.ToInt32() == 0) throw new Exception($"Couldn't find {_d3d8ModuleName}.");
-            if (_dinputBase.ToInt32() == 0) throw new Exception($"Couldn't find {_dinputModuleName}.");
-
             // Init services & hooks
             const float FPS = 60.0f;
             const long PCFrequency = 1000000;
-            _updateService = new UpdateService(this, _lockServerPool, _lockUpdatePool, FPS, PCFrequency);
-            _scoreService = new ScoreService(this);
-            _cheatService = new CheatService(this);
-            _direct3D8Service = new Direct3D8Service(this);
-            _inputService = new InputService(this);
+            _hookManager = new HookManager(Report);
+            _updateService = new UpdateService(_hookManager, _lockServerPool, _lockUpdatePool, FPS, PCFrequency);
+            _scoreService = new ScoreService(_hookManager);
+            _cheatService = new CheatService(_hookManager);
+            _direct3D8Service = new Direct3D8Service(_hookManager);
+            _inputService = new InputService(_hookManager);
 
             // Activate hooks on all threads except the current thread
-            ActivateHooks();
+            _hookManager.EnableHooks();
 
             // Create the server thread
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -80,6 +56,7 @@ namespace HighwayPursuitServer.Server
 
         private void ServerLoop(CancellationTokenSource cts)
         {
+            const int reportPeriod = 1000;
             int loopCount = 0;
             int startTick = Environment.TickCount;
             while (!cts.IsCancellationRequested)
@@ -96,10 +73,10 @@ namespace HighwayPursuitServer.Server
 
                 // Time measurement stuff
                 loopCount++;
-                if (loopCount % 100 == 0)
+                if (loopCount % reportPeriod == 0)
                 {
                     long elapsedTicks = Environment.TickCount - startTick;
-                    var tps = 100.0 / (elapsedTicks / 1000.0);
+                    var tps = ((float)reportPeriod) / (elapsedTicks / 1000.0);
                     var ratio = tps / 60.0;
                     Report($"ticks/s: {tps:0} = x{ratio:0.#}");
                     startTick = Environment.TickCount;
@@ -107,51 +84,6 @@ namespace HighwayPursuitServer.Server
 
                 _lockUpdatePool.Release();
             }
-        }
-
-        private void ActivateHooks()
-        {
-            foreach (var hook in _hooks)
-            {
-                hook.ThreadACL.SetExclusiveACL(new int[] { 0 });
-            }
-        }
-
-        public void Release()
-        {
-            // Remove hooks
-            foreach (var hook in _hooks)
-            {
-                hook.Dispose();
-            }
-
-            // Finalise cleanup of hooks
-            LocalHook.Release();
-        }
-
-        public void RegisterHook(IntPtr address, Delegate hookDelegate, object inCallback = null)
-        {
-            var hook = LocalHook.Create(address, hookDelegate, inCallback);
-            _hooks.Add(hook);
-        }
-
-        public IntPtr GetModuleBase()
-        {
-            return _moduleBase;
-        }
-
-        public IntPtr GetD3D8Base()
-        {
-            return _d3d8Base;
-        }
-
-        public IntPtr GetDINPUTBase()
-        {
-            return _dinputBase;
-        }
-        public Action<string> GetLoggingFunction()
-        {
-            return Report;
         }
     }
 }

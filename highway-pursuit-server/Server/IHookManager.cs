@@ -14,5 +14,7 @@ namespace HighwayPursuitServer.Server
         IntPtr GetDINPUTBase();
         void RegisterHook(IntPtr address, Delegate hook, object inCallback = null);
         Action<string> GetLoggingFunction();
+        void EnableHooks();
+        void Release();
     }
 }
