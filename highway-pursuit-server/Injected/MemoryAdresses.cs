@@ -23,5 +23,8 @@ namespace HighwayPursuitServer.Injected
         public const uint UNLOCK_RECT_OFFSET = 0x27F30;
         public const uint SURFACE_RELEASE_OFFSET = 0x24140;
         #endregion
+        #region DINPUT8.dll
+        public const uint GET_DEVICE_STATE_OFFSET = 0xD550;
+        #endregion
     }
 }

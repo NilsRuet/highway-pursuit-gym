@@ -14,15 +14,18 @@ namespace HighwayPursuitServer.Server
     class GameManager : IHookManager
     {
         private const string _d3d8ModuleName = "d3d8.dll";
-        
+        private const string _dinputModuleName = "DINPUT8.dll";
+
         private readonly Action<string> Report;
         private readonly IntPtr _moduleBase;
         private readonly IntPtr _d3d8Base;
+        private readonly IntPtr _dinputBase;
         private readonly List<LocalHook> _hooks = new List<LocalHook>();
         private readonly UpdateService _updateService;
         private readonly ScoreService _scoreService;
-        private readonly Direct3D8Service _direct3D8Service;
         private readonly CheatService _cheatService;
+        private readonly Direct3D8Service _direct3D8Service;
+        private readonly InputService _inputService;
         private readonly Semaphore _lockUpdatePool; // Update thread waits for this
         private readonly Semaphore _lockServerPool; // Server thread waits for this
 
@@ -38,17 +41,21 @@ namespace HighwayPursuitServer.Server
             // Modules for custom functions
             _moduleBase = Process.GetCurrentProcess().MainModule.BaseAddress;
 
-            // D3D8
+            // D3D8 & DINPUT
             _d3d8Base = new IntPtr(0);
+            _dinputBase = new IntPtr(0);
             foreach (ProcessModule module in Process.GetCurrentProcess().Modules)
             {
                 if (module.ModuleName.Equals(_d3d8ModuleName))
                 {
                     _d3d8Base = module.BaseAddress;
-                    break;
+                } else if (module.ModuleName.Equals(_dinputModuleName))
+                {
+                    _dinputBase = module.BaseAddress;
                 }
             }
             if (_d3d8Base.ToInt32() == 0) throw new Exception($"Couldn't find {_d3d8ModuleName}.");
+            if (_dinputBase.ToInt32() == 0) throw new Exception($"Couldn't find {_dinputModuleName}.");
 
             // Init services & hooks
             const float FPS = 60.0f;
@@ -57,6 +64,7 @@ namespace HighwayPursuitServer.Server
             _scoreService = new ScoreService(this);
             _cheatService = new CheatService(this);
             _direct3D8Service = new Direct3D8Service(this);
+            _inputService = new InputService(this);
 
             // Activate hooks on all threads except the current thread
             ActivateHooks();
@@ -135,6 +143,15 @@ namespace HighwayPursuitServer.Server
         public IntPtr GetD3D8Base()
         {
             return _d3d8Base;
+        }
+
+        public IntPtr GetDINPUTBase()
+        {
+            return _dinputBase;
+        }
+        public Action<string> GetLoggingFunction()
+        {
+            return Report;
         }
     }
 }
