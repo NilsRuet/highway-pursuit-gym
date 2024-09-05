@@ -15,13 +15,16 @@ namespace HighwayPursuitServer.Server
     {
         private readonly Action<string> Report;
         private readonly IHookManager _hookManager;
+        private readonly ResetService _resetService;
         private readonly UpdateService _updateService;
+        private readonly InputService _inputService;
+        private readonly Direct3D8Service _direct3D8Service;
         private readonly ScoreService _scoreService;
         private readonly CheatService _cheatService;
-        private readonly Direct3D8Service _direct3D8Service;
-        private readonly InputService _inputService;
         private readonly Semaphore _lockUpdatePool; // Update thread waits for this
         private readonly Semaphore _lockServerPool; // Server thread waits for this
+
+        const int NO_REWARD_TIMEOUT = 60 * 45; // No rewards for 45 seconds result in a reset (softlock safeguard)
 
         public GameManager(Action<string> reportCallback)
         {
@@ -36,11 +39,12 @@ namespace HighwayPursuitServer.Server
             const float FPS = 60.0f;
             const long PCFrequency = 1000000;
             _hookManager = new HookManager(Report);
+            _resetService = new ResetService(_hookManager);
             _updateService = new UpdateService(_hookManager, _lockServerPool, _lockUpdatePool, FPS, PCFrequency);
+            _inputService = new InputService(_hookManager);
+            _direct3D8Service = new Direct3D8Service(_hookManager);
             _scoreService = new ScoreService(_hookManager);
             _cheatService = new CheatService(_hookManager);
-            _direct3D8Service = new Direct3D8Service(_hookManager);
-            _inputService = new InputService(_hookManager);
 
             // Activate hooks on all threads except the current thread
             _hookManager.EnableHooks();
@@ -57,8 +61,11 @@ namespace HighwayPursuitServer.Server
         private void ServerLoop(CancellationTokenSource cts)
         {
             const int reportPeriod = 1000;
-            int loopCount = 0;
+            int step = 0;
+            int lastRewardedStep = 0;
             int startTick = Environment.TickCount;
+
+            _resetService.Reset();
             while (!cts.IsCancellationRequested)
             {
                 _lockServerPool.WaitOne();
@@ -71,10 +78,22 @@ namespace HighwayPursuitServer.Server
                 {
                     Report(e.Message);
                 }
+                var reward = _scoreService.PullReward();
+                if(reward != 0)
+                {
+                    lastRewardedStep = step;
+                }
+                step++;
 
-                // Time measurement stuff
-                loopCount++;
-                if (loopCount % reportPeriod == 0)
+                // Softlock safeguard
+                if(step - lastRewardedStep > NO_REWARD_TIMEOUT)
+                {
+                    _resetService.Reset();
+                    lastRewardedStep = step;
+                }
+
+                // Performance metrics
+                if (step % reportPeriod == 0)
                 {
                     long elapsedTicks = Environment.TickCount - startTick;
                     var tps = ((float)reportPeriod) / (elapsedTicks / 1000.0);
