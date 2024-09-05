@@ -39,6 +39,12 @@ namespace HighwayPursuitServer.Injected
         void SetScore_Hook(int score)
         {
             SetScore(score);
+            // A reset happened, we set back last score to 0
+            if (score == 0)
+            {
+                _lastScore = 0;
+            }
+
             _newScore = score;
         }
         #endregion

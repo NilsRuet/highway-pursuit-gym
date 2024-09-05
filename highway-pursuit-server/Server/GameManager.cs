@@ -13,7 +13,6 @@ namespace HighwayPursuitServer.Server
 {
     class GameManager
     {
-
         private readonly Action<string> Report;
         private readonly IHookManager _hookManager;
         private readonly EpisodeService _episodeService;
@@ -84,6 +83,10 @@ namespace HighwayPursuitServer.Server
             {
                 // Wait for the game to update
                 _lockServerPool.WaitOne();
+
+                // Receive action (or reset) from the gym env
+                // TODO
+
                 // Setup actions TODO: load inputs from policy
                 _inputService.SetInput(new List<Input> { });
 
@@ -103,6 +106,9 @@ namespace HighwayPursuitServer.Server
                 {
                     lastRewardedStep = step;
                 }
+
+                // Answer with next state/reward
+                // TODO
 
                 // Setup time for the next time step
                 _updateService.Step();
