@@ -13,6 +13,7 @@ namespace HighwayPursuitServer.Server
 {
     class GameManager
     {
+
         private readonly Action<string> Report;
         private readonly IHookManager _hookManager;
         private readonly EpisodeService _episodeService;
@@ -24,6 +25,8 @@ namespace HighwayPursuitServer.Server
         private readonly Semaphore _lockUpdatePool; // Update thread waits for this
         private readonly Semaphore _lockServerPool; // Server thread waits for this
 
+        const float FPS = 60.0f;
+        const long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
         const int NO_REWARD_TIMEOUT = 60 * 45; // No rewards for 45 seconds result in a reset (softlock safeguard)
 
         public GameManager(Action<string> reportCallback)
@@ -37,11 +40,9 @@ namespace HighwayPursuitServer.Server
             Report = reportCallback;
 
             // Init services & hooks
-            const float FPS = 60.0f;
-            const long PCFrequency = 1000000;
             _hookManager = new HookManager(Report);
             _episodeService = new EpisodeService(_hookManager);
-            _updateService = new UpdateService(_hookManager, _lockServerPool, _lockUpdatePool, FPS, PCFrequency);
+            _updateService = new UpdateService(_hookManager, _lockServerPool, _lockUpdatePool, FPS, PERFORMANCE_COUNTER_FREQUENCY);
             _inputService = new InputService(_hookManager);
             _direct3D8Service = new Direct3D8Service(_hookManager);
             _scoreService = new ScoreService(_hookManager);
