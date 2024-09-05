@@ -1,0 +1,2 @@
+# Highway pursuit server
+A c# server, injected into the highway pursuit process to allow communications with a gym client. Also includes game modifications such as increased game speed, invincibility etc.
