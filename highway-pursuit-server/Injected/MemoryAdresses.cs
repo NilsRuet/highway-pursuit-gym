@@ -10,6 +10,7 @@ namespace HighwayPursuitServer.Injected
     {
         #region HighwayPursuit.exe
         public const uint RESET_OFFSET = 0x22A70;
+        public const uint RESPAWN_OFFSET = 0x11D80;
         public const uint UPDATE_OFFSET = 0x29420;
         public const uint GET_LIFE_COUNT_OFFSET = 0x15C70;
         public const uint SET_SCORE_OFFSET = 0x15C00;

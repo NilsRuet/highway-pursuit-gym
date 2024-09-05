@@ -15,7 +15,7 @@ namespace HighwayPursuitServer.Server
     {
         private readonly Action<string> Report;
         private readonly IHookManager _hookManager;
-        private readonly NewGameService _newGameService;
+        private readonly EpisodeService _episodeService;
         private readonly UpdateService _updateService;
         private readonly InputService _inputService;
         private readonly Direct3D8Service _direct3D8Service;
@@ -40,7 +40,7 @@ namespace HighwayPursuitServer.Server
             const float FPS = 60.0f;
             const long PCFrequency = 1000000;
             _hookManager = new HookManager(Report);
-            _newGameService = new NewGameService(_hookManager);
+            _episodeService = new EpisodeService(_hookManager);
             _updateService = new UpdateService(_hookManager, _lockServerPool, _lockUpdatePool, FPS, PCFrequency);
             _inputService = new InputService(_hookManager);
             _direct3D8Service = new Direct3D8Service(_hookManager);
@@ -74,7 +74,7 @@ namespace HighwayPursuitServer.Server
             {
                 _lockServerPool.WaitOne();
                 _updateService.Step();
-                _newGameService.NewGame();
+                _episodeService.NewGame();
                 _lockUpdatePool.Release();
             }
 
@@ -110,7 +110,7 @@ namespace HighwayPursuitServer.Server
                 // Softlock safeguard: reset if rewards stop being collected
                 if (step - lastRewardedStep > NO_REWARD_TIMEOUT)
                 {
-                    _newGameService.NewGame();
+                    _episodeService.NewLife();
                     lastRewardedStep = step;
                 }
 
