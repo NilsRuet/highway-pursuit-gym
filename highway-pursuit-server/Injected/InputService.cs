@@ -8,8 +8,39 @@ using System.Threading.Tasks;
 
 namespace HighwayPursuitServer.Injected
 {
+    public enum Input
+    {
+        Accelerate,
+        Brake,
+        SteerL,
+        SteerR,
+        Fire,
+        Oil,
+        Smoke,
+        Missiles
+    }
+
     class InputService
     {
+
+        private readonly Dictionary<Input, uint> _inputToOffset = new Dictionary<Input, uint>{
+            {Input.Accelerate, MemoryAdresses.ACCELERATE_OFFSET},
+            {Input.Brake, MemoryAdresses.BRAKE_OFFSET},
+            {Input.SteerL, MemoryAdresses.STEER_L_OFFSET},
+            {Input.SteerR, MemoryAdresses.STEER_R_OFFSET},
+            {Input.Fire, MemoryAdresses.FIRE_OFFSET},
+            {Input.Oil, MemoryAdresses.OIL_OFFSET},
+            {Input.Smoke, MemoryAdresses.SMOKE_OFFSET},
+            {Input.Missiles, MemoryAdresses.MISSILES_OFFSET},
+        };
+
+        private List<Input> _currentInputs = new List<Input>();
+        private const byte ACTIVE_KEY = 0x80;
+
+#if DEBUG
+        private const byte MANUAL_CONTROL_KEY = 0x2A; // holding left shift enables manual keyboard control
+#endif
+
         private readonly IHookManager _hookManager;
 
         public InputService(IHookManager hookManager)
@@ -17,6 +48,20 @@ namespace HighwayPursuitServer.Injected
             this._hookManager = hookManager;
             this.RegisterHooks();
         }
+
+        #region input management
+        public void SetInput(List<Input> inputs)
+        {
+            this._currentInputs = inputs;
+        }
+
+        private int InputToKeyCode(Input input)
+        {
+            var offset = _inputToOffset[input];
+            var module = _hookManager.GetModuleBase();
+            return Marshal.ReadInt32(new IntPtr(module.ToInt32() + offset));
+        }
+        #endregion
 
         #region Hooking
         private void RegisterHooks()
@@ -33,9 +78,25 @@ namespace HighwayPursuitServer.Injected
             // Don't do anything if device acquisition failed
             if (res != 0) return res;
 
+#if DEBUG
+            // Don't do anything in manual control
+            byte[] originalState = new byte[deviceSize];
+            Marshal.Copy(pDeviceStateArray, originalState, 0, (int)deviceSize);
+            if (originalState[MANUAL_CONTROL_KEY] == ACTIVE_KEY)
+            {
+                return res;
+            }
+#endif
+
             // Edit the keyboard state
             byte[] modifiedState = new byte[deviceSize];
-            Marshal.Copy(pDeviceStateArray, modifiedState, 0, (int)deviceSize);
+
+            foreach (Input input in _currentInputs)
+            {
+                var keycode = InputToKeyCode(input);
+                modifiedState[keycode] = ACTIVE_KEY;
+            }
+
             // TODO: edit keyboard state based on actions!
             Marshal.Copy(modifiedState, 0, pDeviceStateArray, (int)deviceSize);
             return res;

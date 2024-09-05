@@ -62,6 +62,7 @@ namespace HighwayPursuitServer.Server
             while (!cts.IsCancellationRequested)
             {
                 _lockServerPool.WaitOne();
+                _inputService.SetInput(new List<Input> { }); //TODO : load inputs from policy
                 _updateService.Step();
                 try
                 {

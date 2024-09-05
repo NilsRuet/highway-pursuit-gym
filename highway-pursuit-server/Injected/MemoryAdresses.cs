@@ -13,6 +13,14 @@ namespace HighwayPursuitServer.Injected
         public const uint GET_LIFE_COUNT_OFFSET = 0x15C70;
         public const uint SET_SCORE_OFFSET = 0x15C00;
         public const uint DEVICE_PTR_OFFSET = 0x960CC;
+        public const uint ACCELERATE_OFFSET = 0x969E8;
+        public const uint BRAKE_OFFSET = 0x969EC;
+        public const uint STEER_L_OFFSET = 0x969F0;
+        public const uint STEER_R_OFFSET = 0x969F4;
+        public const uint FIRE_OFFSET = 0x969F8;
+        public const uint OIL_OFFSET = 0x969FC;
+        public const uint SMOKE_OFFSET = 0x97A00;
+        public const uint MISSILES_OFFSET = 0x97A04;
         #endregion
         #region d3d8.dll
         public const uint GET_DISPLAY_MODE_OFFSET = 0x2A650;
