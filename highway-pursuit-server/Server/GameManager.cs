@@ -15,7 +15,7 @@ namespace HighwayPursuitServer.Server
     {
         private readonly Action<string> Report;
         private readonly IHookManager _hookManager;
-        private readonly ResetService _resetService;
+        private readonly NewGameService _newGameService;
         private readonly UpdateService _updateService;
         private readonly InputService _inputService;
         private readonly Direct3D8Service _direct3D8Service;
@@ -29,6 +29,7 @@ namespace HighwayPursuitServer.Server
         public GameManager(Action<string> reportCallback)
         {
             // Init the update semaphore
+            // Allow one game update, zero server update as the initial state
             _lockUpdatePool = new Semaphore(initialCount: 1, maximumCount: 1);
             _lockServerPool = new Semaphore(initialCount: 0, maximumCount: 1);
 
@@ -39,7 +40,7 @@ namespace HighwayPursuitServer.Server
             const float FPS = 60.0f;
             const long PCFrequency = 1000000;
             _hookManager = new HookManager(Report);
-            _resetService = new ResetService(_hookManager);
+            _newGameService = new NewGameService(_hookManager);
             _updateService = new UpdateService(_hookManager, _lockServerPool, _lockUpdatePool, FPS, PCFrequency);
             _inputService = new InputService(_hookManager);
             _direct3D8Service = new Direct3D8Service(_hookManager);
@@ -54,6 +55,7 @@ namespace HighwayPursuitServer.Server
             Task mainServerTask = Task.Run(() => ServerLoop(cts));
             AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
             {
+                _hookManager.Release();
                 cts.Cancel();
             };
         }
@@ -65,30 +67,50 @@ namespace HighwayPursuitServer.Server
             int lastRewardedStep = 0;
             int startTick = Environment.TickCount;
 
-            _resetService.Reset();
-            while (!cts.IsCancellationRequested)
+            // Here we wait for update to be called at least once
+            // This ensure the game is initialized
+            // We can then start a new game
+            if (!cts.IsCancellationRequested)
             {
                 _lockServerPool.WaitOne();
-                _inputService.SetInput(new List<Input> { }); //TODO : load inputs from policy
                 _updateService.Step();
+                _newGameService.NewGame();
+                _lockUpdatePool.Release();
+            }
+
+            // Main server loop
+            while (!cts.IsCancellationRequested)
+            {
+                // Wait for the game to update
+                _lockServerPool.WaitOne();
+                // Setup actions TODO: load inputs from policy
+                _inputService.SetInput(new List<Input> { });
+
+                // Get game state
                 try
                 {
-                    _direct3D8Service.Screenshot();
-                } catch(D3DERR e)
+                    _direct3D8Service.Screenshot(); //TODO: how to collect/send the data?
+                }
+                catch (D3DERR e)
                 {
                     Report(e.Message);
                 }
+
+                // Get reward
                 var reward = _scoreService.PullReward();
-                if(reward != 0)
+                if (reward != 0)
                 {
                     lastRewardedStep = step;
                 }
+
+                // Setup time for the next time step
+                _updateService.Step();
                 step++;
 
-                // Softlock safeguard
-                if(step - lastRewardedStep > NO_REWARD_TIMEOUT)
+                // Softlock safeguard: reset if rewards stop being collected
+                if (step - lastRewardedStep > NO_REWARD_TIMEOUT)
                 {
-                    _resetService.Reset();
+                    _newGameService.NewGame();
                     lastRewardedStep = step;
                 }
 
@@ -102,6 +124,7 @@ namespace HighwayPursuitServer.Server
                     startTick = Environment.TickCount;
                 }
 
+                // Allow game loop update
                 _lockUpdatePool.Release();
             }
         }
