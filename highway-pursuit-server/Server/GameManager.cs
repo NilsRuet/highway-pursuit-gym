@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using EasyHook;
 using HighwayPursuitServer.Injected;
 
 namespace HighwayPursuitServer.Server
@@ -25,8 +21,11 @@ namespace HighwayPursuitServer.Server
         private readonly Semaphore _lockServerPool; // Server thread waits for this
 
         const float FPS = 60.0f;
+        private readonly float TICKS_PER_FRAME = Stopwatch.Frequency / FPS;
+        private readonly float TICKS_PER_MS = Stopwatch.Frequency / 1000.0f;
         const long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
         const int NO_REWARD_TIMEOUT = 60 * 45; // No rewards for 45 seconds result in a reset (softlock safeguard)
+        const bool IS_REAL_TIME = false;
 
         public GameManager(Action<string> reportCallback)
         {
@@ -41,7 +40,7 @@ namespace HighwayPursuitServer.Server
             // Init services & hooks
             _hookManager = new HookManager(Report);
             _episodeService = new EpisodeService(_hookManager);
-            _updateService = new UpdateService(_hookManager, _lockServerPool, _lockUpdatePool, FPS, PERFORMANCE_COUNTER_FREQUENCY);
+            _updateService = new UpdateService(_hookManager, IS_REAL_TIME, _lockServerPool, _lockUpdatePool, FPS, PERFORMANCE_COUNTER_FREQUENCY);
             _inputService = new InputService(_hookManager);
             _direct3D8Service = new Direct3D8Service(_hookManager);
             _scoreService = new ScoreService(_hookManager);
@@ -52,7 +51,7 @@ namespace HighwayPursuitServer.Server
 
             // Create the server thread
             CancellationTokenSource cts = new CancellationTokenSource();
-            Task mainServerTask = Task.Run(() => ServerLoop(cts));
+            Task mainServerTask = Task.Run(() => ServerLoop(cts, IS_REAL_TIME));
             AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
             {
                 _hookManager.Release();
@@ -60,12 +59,13 @@ namespace HighwayPursuitServer.Server
             };
         }
 
-        private void ServerLoop(CancellationTokenSource cts)
+        private void ServerLoop(CancellationTokenSource cts, bool isRealTime)
         {
+            // TODO: probably create a "Server" class, to split frame handling into methods while keeping context
             const int reportPeriod = 1000;
-            int step = 0;
-            int lastRewardedStep = 0;
-            int startTick = Environment.TickCount;
+            long step = 0;
+            long lastRewardedStep = 0;
+            long startTick = Environment.TickCount;
 
             // Here we wait for update to be called at least once
             // This ensure the game is initialized
@@ -78,10 +78,40 @@ namespace HighwayPursuitServer.Server
                 _lockUpdatePool.Release();
             }
 
-            // Main server loop
-            while (!cts.IsCancellationRequested)
+            // Handle loop
+            if (!isRealTime)
             {
-                // Wait for the game to update
+                while (!cts.IsCancellationRequested)
+                {
+                    handleFrame();
+                }
+            } else
+            {
+                while (!cts.IsCancellationRequested)
+                {
+                    Stopwatch stopwatch = Stopwatch.StartNew();
+                    handleFrame();
+                    double sleepTime = (TICKS_PER_FRAME - stopwatch.ElapsedTicks) / TICKS_PER_MS;
+                    const int sleepToleranceMillisecond = 1;
+                    if(sleepTime > 0)
+                    {
+                        if(sleepTime > sleepToleranceMillisecond)
+                        {
+                            Thread.Sleep((int)sleepTime - sleepToleranceMillisecond);
+                        }
+
+                        while(stopwatch.ElapsedTicks < TICKS_PER_FRAME)
+                        {
+                            Thread.SpinWait(1);
+                        }
+                    }
+                    stopwatch.Stop();
+                }
+            }
+
+            // Frame code
+            void handleFrame() {
+                // Wait for and lock game update
                 _lockServerPool.WaitOne();
 
                 // Receive action (or reset) from the gym env
@@ -131,7 +161,7 @@ namespace HighwayPursuitServer.Server
                     startTick = Environment.TickCount;
                 }
 
-                // Allow game loop update
+                // Release game update
                 _lockUpdatePool.Release();
             }
         }

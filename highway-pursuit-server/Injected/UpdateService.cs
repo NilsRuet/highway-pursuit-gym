@@ -19,10 +19,12 @@ namespace HighwayPursuitServer.Injected
         private long _performanceCount; // Most recently provided performance counter value
         private readonly Semaphore _lockServerPool;
         private readonly Semaphore _lockUpdatePool;
+        private readonly bool _isRealTime; // Disable/enable performance counter hooks
 
-        public UpdateService(IHookManager hookManager, Semaphore lockServerPool, Semaphore lockUpdatePool, float FPS, long performanceCounterFrequency)
+        public UpdateService(IHookManager hookManager, bool isRealTime, Semaphore lockServerPool, Semaphore lockUpdatePool, float FPS, long performanceCounterFrequency)
         {
             this._hookManager = hookManager;
+            this._isRealTime = isRealTime;
             this._lockServerPool = lockServerPool;
             this._lockUpdatePool = lockUpdatePool;
             this._FPS = FPS;
@@ -34,20 +36,26 @@ namespace HighwayPursuitServer.Injected
 
         public void Step()
         {
-            _performanceCount += _counterTicksPerFrame;
+            if (!_isRealTime)
+            {
+                _performanceCount += _counterTicksPerFrame;
+            }
         }
 
         #region Hooking
         private void RegisterHooks()
         {
-            // Performance counter functions
-            _hookManager.RegisterHook(
-                LocalHook.GetProcAddress("kernel32.dll", "QueryPerformanceCounter"),
-                new QueryPerformanceCounter_delegate(QueryPerformanceCounter_Hook));
+            if (!_isRealTime)
+            {
+                // Performance counter functions
+                _hookManager.RegisterHook(
+                    LocalHook.GetProcAddress("kernel32.dll", "QueryPerformanceCounter"),
+                    new QueryPerformanceCounter_delegate(QueryPerformanceCounter_Hook));
 
-            _hookManager.RegisterHook(
-                LocalHook.GetProcAddress("kernel32.dll", "QueryPerformanceFrequency"),
-                new QueryPerformanceFrequency_delegate(QueryPerformanceFrequency_Hook));
+                _hookManager.RegisterHook(
+                    LocalHook.GetProcAddress("kernel32.dll", "QueryPerformanceFrequency"),
+                    new QueryPerformanceFrequency_delegate(QueryPerformanceFrequency_Hook));
+            }
 
             // Update function
             IntPtr updatePtr = new IntPtr(_hookManager.GetModuleBase().ToInt32() + MemoryAdresses.UPDATE_OFFSET);
@@ -58,12 +66,22 @@ namespace HighwayPursuitServer.Injected
         #region hooks
         bool QueryPerformanceFrequency_Hook(out long lpFrequency)
         {
+            if (_isRealTime)
+            {
+                throw new Exception("QueryPerformanceFrequency_Hook called in real time mode.");
+            }
+
             lpFrequency = _performanceCounterFrequency;
             return true;
         }
 
         bool QueryPerformanceCounter_Hook(out long lpPerformanceCount)
         {
+            if (_isRealTime)
+            {
+                throw new Exception("QueryPerformanceFrequency_Hook called in real time mode.");
+            }
+
             if (_performanceCount == 0) // Initialize the previous value if necessary
             {
                 QueryPerformanceCounter(out _performanceCount);
