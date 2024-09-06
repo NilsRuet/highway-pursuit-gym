@@ -83,15 +83,19 @@ namespace HighwayPursuitServer.Injected
             IntPtr pBackBufferSurface = new IntPtr(pBackBufferSurfaceValue);
 
             HandleDRDERR(IDirect3DDevice8.CopyRects(Device, pBackBufferSurface, IntPtr.Zero, 0, pSurface, IntPtr.Zero));
+            try
+            {
+                // Lock pixels
+                HandleDRDERR(IDirect3DSurface8.LockRect(pSurface, out D3DLOCKED_RECT lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY));
 
-            // Lock pixels
-            HandleDRDERR(IDirect3DSurface8.LockRect(pSurface, out D3DLOCKED_RECT lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY));
+                // TODO: do stuff!
 
-            // TODO: do stuff!
-
-            // Release resources
-            HandleDRDERR(IDirect3DSurface8.UnlockRect(pSurface));
-            HandleDRDERR(IDirect3DSurface8.Release(pBackBufferSurface));
+            } finally
+            {
+                // Release resources
+                HandleDRDERR(IDirect3DSurface8.UnlockRect(pSurface));
+                HandleDRDERR(IDirect3DSurface8.Release(pBackBufferSurface));
+            }
         }
 
         #region Hooking
@@ -217,7 +221,6 @@ namespace HighwayPursuitServer.Injected
         RIGHT = 2,
         FORCE_DWORD = 0x7fffffff
     }
-
 
     [Flags]
     public enum LOCK_RECT_FLAGS : ulong

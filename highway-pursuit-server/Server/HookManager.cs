@@ -22,25 +22,27 @@ namespace HighwayPursuitServer.Server
         {
             _report = report;
 
-            // Modules for custom functions
-            _moduleBase = Process.GetCurrentProcess().MainModule.BaseAddress;
-
-            // D3D8 & DINPUT
-            _d3d8Base = new IntPtr(0);
-            _dinputBase = new IntPtr(0);
-            foreach (ProcessModule module in Process.GetCurrentProcess().Modules)
+            using (Process proc = Process.GetCurrentProcess())
             {
-                if (module.ModuleName.Equals(_d3d8ModuleName))
+                // Modules for custom functions
+                _moduleBase = proc.MainModule.BaseAddress;
+                // D3D8 & DINPUT
+                _d3d8Base = new IntPtr(0);
+                _dinputBase = new IntPtr(0);
+                foreach (ProcessModule module in proc.Modules)
                 {
-                    _d3d8Base = module.BaseAddress;
+                    if (module.ModuleName.Equals(_d3d8ModuleName))
+                    {
+                        _d3d8Base = module.BaseAddress;
+                    }
+                    else if (module.ModuleName.Equals(_dinputModuleName))
+                    {
+                        _dinputBase = module.BaseAddress;
+                    }
                 }
-                else if (module.ModuleName.Equals(_dinputModuleName))
-                {
-                    _dinputBase = module.BaseAddress;
-                }
+                if (_d3d8Base.ToInt32() == 0) throw new Exception($"Couldn't find {_d3d8ModuleName}.");
+                if (_dinputBase.ToInt32() == 0) throw new Exception($"Couldn't find {_dinputModuleName}.");
             }
-            if (_d3d8Base.ToInt32() == 0) throw new Exception($"Couldn't find {_d3d8ModuleName}.");
-            if (_dinputBase.ToInt32() == 0) throw new Exception($"Couldn't find {_dinputModuleName}.");
         }
 
         public void EnableHooks()

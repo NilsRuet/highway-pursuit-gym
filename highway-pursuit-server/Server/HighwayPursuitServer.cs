@@ -29,7 +29,7 @@ namespace HighwayPursuitServer.Server
         const bool IS_REAL_TIME = false;
         
         // Metrics options
-        const int REPORT_PERIOD = 1000;
+        const int REPORT_PERIOD = 5 * 60 * 60; // 5 minutes of gameplay
 
         private long _step; // current step
         private long _lastRewardedStep; // last step where reward wans't zero
@@ -132,7 +132,7 @@ namespace HighwayPursuitServer.Server
             // TODO
 
             // Setup actions TODO: load inputs from policy
-            _inputService.SetInput(new List<Input> { });
+            _inputService.SetInput(new List<Input> { Input.Accelerate, Input.Fire });
 
             // Get game state
             try
@@ -184,7 +184,14 @@ namespace HighwayPursuitServer.Server
                 long elapsedTicks = Environment.TickCount - startTick;
                 var tps = ((float)REPORT_PERIOD) / (elapsedTicks / 1000.0);
                 var ratio = tps / 60.0;
-                Report($"ticks/s: {tps:0} = x{ratio:0.#}");
+
+                double memorySize = 0;
+                using (Process proc = Process.GetCurrentProcess())
+                {
+                    memorySize = proc.PrivateMemorySize64 / (1024.0*1024.0);
+                }
+
+                    Report($"step {_step} -> {tps:0} ticks/s = x{ratio:0.#} | RAM:{memorySize:0.##}Mb");
                 startTick = Environment.TickCount;
             }
         }
