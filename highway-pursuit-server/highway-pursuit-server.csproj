@@ -53,7 +53,7 @@
     <Compile Include="Server\IHookManager.cs" />
     <Compile Include="Injected\MemoryAdresses.cs" />
     <Compile Include="Injected\UpdateService.cs" />
-    <Compile Include="Server\GameManager.cs" />
+    <Compile Include="Server\HighwayPursuitServer.cs" />
     <Compile Include="Injected\ScoreService.cs" />
     <Compile Include="InjectionEntryPoint.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

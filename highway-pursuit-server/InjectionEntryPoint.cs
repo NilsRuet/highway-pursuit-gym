@@ -48,7 +48,7 @@ namespace HighwayPursuitServer
                     // swallow exceptions so that any issues caused by this code do not crash target process
                 }
             }
-            var manager = new GameManager(report);
+            var manager = new Server.HighwayPursuitServer(report);
 
             // Wake up the process (required if using RemoteHooking.CreateAndInject)
             EasyHook.RemoteHooking.WakeUpProcess();
