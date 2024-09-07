@@ -82,6 +82,7 @@ namespace HighwayPursuitServer.Injected
             HandleDRDERR(IDirect3DDevice8.GetBackBuffer(Device, 0, D3DBACKBUFFER_TYPE.TYPE_MONO, ref pBackBufferSurfaceValue));
             IntPtr pBackBufferSurface = new IntPtr(pBackBufferSurfaceValue);
 
+            // TODO: This is leaking memory and I don't know why!
             HandleDRDERR(IDirect3DDevice8.CopyRects(Device, pBackBufferSurface, IntPtr.Zero, 0, pSurface, IntPtr.Zero));
             try
             {
