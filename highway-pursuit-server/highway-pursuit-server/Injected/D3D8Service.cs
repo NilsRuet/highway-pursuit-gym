@@ -89,7 +89,7 @@ namespace HighwayPursuitServer.Injected
                 // Lock pixels
                 HandleDRDERR(IDirect3DSurface8.LockRect(pSurface, out D3DLOCKED_RECT lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY));
 
-                // TODO: do stuff!
+                // TODO: do stuff! including removing the X8 channel?
 
             } finally
             {

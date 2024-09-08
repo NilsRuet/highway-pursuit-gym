@@ -28,4 +28,4 @@ class Reward(ctypes.Structure):
         ('reward', ctypes.c_uint),
     )
 
-# Observation not included because its size is dynamic
+# Observation struct is not included because its size is dynamic based on the server config
