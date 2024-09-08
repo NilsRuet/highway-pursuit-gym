@@ -5,7 +5,7 @@ def main():
     dll_path = "..\\highway-pursuit-server\\highway-pursuit-server\\bin\\Debug\\HighwayPursuitServer.dll"
     app_path = "C:\\Program Files (x86)\\HighwayPursuit\\HighwayPursuit.exe"
 
-    env = HighwayPursuitEnv(launcher_path, app_path, dll_path)
+    env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False)
     observation, info = env.reset()
     done = False
     while not done:

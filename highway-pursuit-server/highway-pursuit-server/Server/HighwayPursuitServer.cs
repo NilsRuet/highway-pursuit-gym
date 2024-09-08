@@ -10,6 +10,18 @@ namespace HighwayPursuitServer.Server
 {
     class HighwayPursuitServer
     {
+        // Constants
+        const float FPS = 60.0f;
+        private readonly float TICKS_PER_FRAME = Stopwatch.Frequency / FPS;
+        private readonly float TICKS_PER_MS = Stopwatch.Frequency / 1000.0f;
+        const long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
+        const int NO_REWARD_TIMEOUT = 60 * 45; // No rewards for 45 seconds result in a reset (softlock safeguard)
+        const int REPORT_PERIOD = 5 * 60 * 60; // update metrics every 5 minutes of gameplay
+
+        // Instance members
+        public readonly Task serverTask;
+        private readonly ServerOptions _options; // Game options
+
         private readonly CommunicationManager _communicationManager;
         private readonly IHookManager _hookManager;
         private readonly EpisodeService _episodeService;
@@ -20,18 +32,6 @@ namespace HighwayPursuitServer.Server
         private readonly CheatService _cheatService;
         private readonly Semaphore _lockUpdatePool; // Update thread waits for this
         private readonly Semaphore _lockServerPool; // Server thread waits for this
-
-        // Game options
-        private readonly ServerOptions _options;
-        
-        const float FPS = 60.0f;
-        private readonly float TICKS_PER_FRAME = Stopwatch.Frequency / FPS;
-        private readonly float TICKS_PER_MS = Stopwatch.Frequency / 1000.0f;
-        const long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
-        const int NO_REWARD_TIMEOUT = 60 * 45; // No rewards for 45 seconds result in a reset (softlock safeguard)
-        
-        // Metrics options
-        const int REPORT_PERIOD = 5 * 60 * 60; // 5 minutes of gameplay
 
         private bool _terminated = false;
         private long _step; // current step
@@ -65,18 +65,18 @@ namespace HighwayPursuitServer.Server
 
             // Create the server thread
             CancellationTokenSource cts = new CancellationTokenSource();
-            Task mainServerTask =
-                Task
-                .Run(() => ServerThread(cts))
+            serverTask =
+                Task.Run(() => ServerThread(cts))
                 .ContinueWith((task) =>
                 {
                     _hookManager.Release();
                     _communicationManager.Dispose();
                 });
 
+            // TODO: That might be useless
             AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
             {
-                if (!mainServerTask.IsCompleted)
+                if (!serverTask.IsCompleted)
                 {
                     cts.Cancel();
                 }

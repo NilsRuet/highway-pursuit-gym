@@ -47,7 +47,6 @@ namespace HighwayPursuitLauncher
                     args[SERVER_ARGS_OFFSET + 6],
                     args[SERVER_ARGS_OFFSET + 7]
                 );
-
                 // start and inject into a new process
                 EasyHook.RemoteHooking.CreateAndInject(
                     targetExe,
@@ -64,7 +63,6 @@ namespace HighwayPursuitLauncher
             {
                 Environment.Exit((int)ExitCode.InjectionFailed);
             }
-            Thread.Sleep(1000);
         }
 
         static bool ProcessArgs(string[] args, out string targetExe, out string targetDll)

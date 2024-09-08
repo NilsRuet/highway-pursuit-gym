@@ -7,8 +7,8 @@ from envs._remote.highway_pursuit_client import HighwayPursuitClient
 class HighwayPursuitEnv(gym.Env):
     metadata = {"render_modes": ["rgb_array"], "render_fps": 12}
 
-    def __init__(self, launcher_path, highway_pursuit_path, dll_path, render_mode=None):
-        self.client = HighwayPursuitClient(launcher_path, highway_pursuit_path, dll_path, is_real_time = False)
+    def __init__(self, launcher_path, highway_pursuit_path, dll_path, render_mode=None, real_time=False):
+        self.client = HighwayPursuitClient(launcher_path, highway_pursuit_path, dll_path, real_time)
 
         # Create process, get observation/action format
         image_shape, action_count = self.client.create_process_and_connect()

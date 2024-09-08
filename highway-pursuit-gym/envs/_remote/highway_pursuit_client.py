@@ -30,7 +30,7 @@ class Semaphore():
         return kernel32.ReleaseSemaphore(self._semaphore, 1, None)
     
     def close(self):
-        return kernel32.CloseHandle(self._mutex)
+        return kernel32.CloseHandle(self._semaphore)
 
 class HighwayPursuitClient:
     def __init__(self, launcher_path, highway_pursuit_path, dll_path, is_real_time = False):
@@ -82,10 +82,11 @@ class HighwayPursuitClient:
 
         # Run the command
         result = subprocess.run(command, capture_output=False, text=False)
-        # TODO: handle error codes
-        # TODO: maybe get the PID of the server back such that it can be killed in case it stops responding
         if(result.returncode != 0):
             raise Exception(f"HighwayPursuit launcher failed with code {result.returncode}")
+
+        # TODO: handle error codes
+        # TODO: maybe get the PID of the server back such that it can be killed in case it stops responding
 
     def setup_server(self):
         # Create semaphores for synchronization
@@ -161,4 +162,4 @@ class HighwayPursuitClient:
         self.reward_sm.unlink()
 
         self.lock_client_pool.close()
-        self.server_mutex.close()
+        self.lock_server_pool.close()
