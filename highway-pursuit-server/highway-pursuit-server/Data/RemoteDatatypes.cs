@@ -34,11 +34,11 @@ namespace HighwayPursuitServer.Data
     [StructLayout(LayoutKind.Sequential)]
     public struct Instruction
     {
-        public InstructionCode instruction;
+        public InstructionCode code;
 
-        public Instruction(InstructionCode instruction)
+        public Instruction(InstructionCode code)
         {
-            this.instruction = instruction;
+            this.code = code;
         }
     }
 

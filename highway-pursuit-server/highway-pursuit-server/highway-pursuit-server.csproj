@@ -45,6 +45,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Data\ServerOptions.cs" />
+    <Compile Include="Data\RemoteDatatypes.cs" />
     <Compile Include="Injected\InputService.cs" />
     <Compile Include="Injected\CheatService.cs" />
     <Compile Include="Injected\D3D8Service.cs" />
@@ -57,7 +59,7 @@
     <Compile Include="Injected\ScoreService.cs" />
     <Compile Include="InjectionEntryPoint.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Server\ServerInterface.cs" />
+    <Compile Include="Server\CommunicationManager.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="EasyHook32.dll">

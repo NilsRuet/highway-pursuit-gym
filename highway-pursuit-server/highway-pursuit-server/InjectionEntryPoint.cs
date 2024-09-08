@@ -6,19 +6,22 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Diagnostics;
 using HighwayPursuitServer.Server;
+using HighwayPursuitServer.Data;
 
 namespace HighwayPursuitServer
 {
     public class InjectionEntryPoint : EasyHook.IEntryPoint
     {
-        public InjectionEntryPoint(EasyHook.RemoteHooking.IContext context, params object[] args)
+        public InjectionEntryPoint(EasyHook.RemoteHooking.IContext context, ServerOptions options)
         {
             // TODO: a logging system!
         }
 
-        public void Run(EasyHook.RemoteHooking.IContext context, params object[] args)
+        public void Run(EasyHook.RemoteHooking.IContext context, ServerOptions options)
         {
-            var manager = new Server.HighwayPursuitServer();
+            var comManager = new CommunicationManager(options);
+            var _ = new Server.HighwayPursuitServer(comManager, options);
+
             EasyHook.RemoteHooking.WakeUpProcess();
         }
     }

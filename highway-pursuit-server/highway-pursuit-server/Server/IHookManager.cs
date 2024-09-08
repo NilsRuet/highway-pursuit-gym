@@ -9,11 +9,11 @@ namespace HighwayPursuitServer.Server
 {
     interface IHookManager
     {
+        Action<string> Log { get; }
         IntPtr GetModuleBase();
         IntPtr GetD3D8Base();
         IntPtr GetDINPUTBase();
         void RegisterHook(IntPtr address, Delegate hook, object inCallback = null);
-        Action<string> GetLoggingFunction();
         void EnableHooks();
         void Release();
     }

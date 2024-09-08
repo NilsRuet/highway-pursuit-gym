@@ -18,6 +18,8 @@ namespace HighwayPursuitServer.Server
         private readonly List<LocalHook> _hooks = new List<LocalHook>();
         private readonly Action<string> _report;
 
+        public Action<string> Log => _report;
+
         public HookManager(Action<string> report)
         {
             _report = report;
@@ -84,10 +86,6 @@ namespace HighwayPursuitServer.Server
         public IntPtr GetDINPUTBase()
         {
             return _dinputBase;
-        }
-        public Action<string> GetLoggingFunction()
-        {
-            return _report;
         }
     }
 }

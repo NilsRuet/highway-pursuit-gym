@@ -1,8 +1,11 @@
-﻿using System;
+﻿using HighwayPursuitServer.Data;
+using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace HighwayPursuitLauncher
@@ -10,8 +13,7 @@ namespace HighwayPursuitLauncher
     class Program
     {
         const int ARG_COUNT = 10;
-        const int SERVER_ARG_COUNT = ARG_COUNT - 2;
-        const int SHARED_RESOURCES_ARGS_OFFSET = 3;
+        const int SERVER_ARGS_OFFSET = 2;
 
         enum ExitCode : int
         {
@@ -29,8 +31,22 @@ namespace HighwayPursuitLauncher
 
             try
             {
-                string[] serverArgs = new string[SERVER_ARG_COUNT];
-                Array.Copy(args, ARG_COUNT - SERVER_ARG_COUNT, serverArgs, 0, SERVER_ARG_COUNT);
+                var success = bool.TryParse(args[SERVER_ARGS_OFFSET+0], out bool isRealTime);
+                if (!success)
+                {
+                    isRealTime = false;
+                }
+
+                var options = new ServerOptions(
+                    isRealTime,
+                    args[SERVER_ARGS_OFFSET + 1],
+                    args[SERVER_ARGS_OFFSET + 2],
+                    args[SERVER_ARGS_OFFSET + 3],
+                    args[SERVER_ARGS_OFFSET + 4],
+                    args[SERVER_ARGS_OFFSET + 5],
+                    args[SERVER_ARGS_OFFSET + 6],
+                    args[SERVER_ARGS_OFFSET + 7]
+                );
 
                 // start and inject into a new process
                 EasyHook.RemoteHooking.CreateAndInject(
@@ -41,13 +57,14 @@ namespace HighwayPursuitLauncher
                     targetDll,
                     targetDll,
                     out _,
-                    serverArgs
+                    options
                 );
             }
             catch (Exception)
             {
                 Environment.Exit((int)ExitCode.InjectionFailed);
             }
+            Thread.Sleep(1000);
         }
 
         static bool ProcessArgs(string[] args, out string targetExe, out string targetDll)
@@ -74,10 +91,9 @@ namespace HighwayPursuitLauncher
                 return false;
             }
 
-            // isRealTime, arg[2], is not checked because it will be defaulted to false if needed 
-
-            // Check resource names (all remaining args)
-            for (int i = SHARED_RESOURCES_ARGS_OFFSET; i < args.Length; i++)
+            // Check other args (isRealTime which is always defaulted, and the resource names)
+            // TODO: maybe a warning is isRealTime is not a proper bool str?
+            for (int i = SERVER_ARGS_OFFSET; i < args.Length; i++)
             {
                 if (string.IsNullOrEmpty(args[i])) return false;
             }

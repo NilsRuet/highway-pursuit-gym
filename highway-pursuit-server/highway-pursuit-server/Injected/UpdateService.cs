@@ -34,7 +34,7 @@ namespace HighwayPursuitServer.Injected
             this.RegisterHooks();
         }
 
-        public void Step()
+        public void UpdateTime()
         {
             if (!_isRealTime)
             {

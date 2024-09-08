@@ -1,6 +1,7 @@
 ﻿using HighwayPursuitServer.Data;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Linq;
@@ -13,16 +14,10 @@ namespace HighwayPursuitServer.Server
 {
     class CommunicationManager
     {
-        private readonly string _serverMutexName;
-        private readonly string _clientMutexName;
-        private readonly string _serverInfoMemoryName;
-        private readonly string _instructionMemoryName;
-        private readonly string _observationMemoryName;
-        private readonly string _infoMemoryName;
-        private readonly string _rewardMemoryName;
+        private readonly ServerOptions _args;
 
-        private Mutex _serverMutex;
-        private Mutex _clientMutex;
+        private Semaphore _lockServerPool;
+        private Semaphore _lockClientPool;
 
         private MemoryMappedViewAccessor _serverInfoSM;
         private MemoryMappedViewAccessor _instructionSM;
@@ -30,47 +25,58 @@ namespace HighwayPursuitServer.Server
         private MemoryMappedViewAccessor _infoSM;
         private MemoryMappedViewAccessor _rewardSM;
 
-        private List<IDisposable> _disposableResources = new List<IDisposable>();
+        private readonly List<IDisposable> _disposableResources = new List<IDisposable>();
 
-        public CommunicationManager(string serverMutexName, string clientMutexName, string serverInfoMemoryName, string instructionMemoryName, string observationMemoryName, string infoMemoryName, string rewardMemoryName)
+        public CommunicationManager(ServerOptions args)
         {
-            _serverMutexName = serverMutexName;
-            _clientMutexName = clientMutexName;
-            _serverInfoMemoryName = serverInfoMemoryName;
-            _instructionMemoryName = instructionMemoryName;
-            _observationMemoryName = observationMemoryName;
-            _infoMemoryName = infoMemoryName;
-            _rewardMemoryName = rewardMemoryName;
+            this._args = args;
         }
 
         public void Connect()
         {
             // Open synchronization mutex
-            _serverMutex = Mutex.OpenExisting(_serverMutexName);
-            _clientMutex = Mutex.OpenExisting(_clientMutexName);
+            _lockServerPool = Semaphore.OpenExisting(_args.serverMutexName);
+            _lockClientPool = Semaphore.OpenExisting(_args.clientMutexName);
 
             // Wait for the client to be ready
-            _serverMutex.WaitOne();
+            _lockServerPool.WaitOne();
 
             // Open the server info memory map
-            _serverInfoSM = ConnectToSharedMemory(_serverInfoMemoryName);
+            _serverInfoSM = ConnectToSharedMemory(_args.serverInfoMemoryName);
 
             var serverInfo = new ServerInfo(640, 480, 3, 8); // TODO: get the actual values
             CopyStructToSharedMemory(serverInfo, _serverInfoSM);
 
-            _clientMutex.ReleaseMutex();
+            _lockClientPool.Release();
 
             // Now the client should have allocated all shared memory sections
             // Crate the accessors
-            _serverMutex.WaitOne();
+            _lockServerPool.WaitOne();
 
-            _instructionSM = ConnectToSharedMemory(_instructionMemoryName);
-            _observationSM = ConnectToSharedMemory(_observationMemoryName);
-            _infoSM = ConnectToSharedMemory(_infoMemoryName);
-            _rewardSM = ConnectToSharedMemory(_rewardMemoryName);
+            _instructionSM = ConnectToSharedMemory(_args.instructionMemoryName);
+            _observationSM = ConnectToSharedMemory(_args.observationMemoryName);
+            _infoSM = ConnectToSharedMemory(_args.infoMemoryName);
+            _rewardSM = ConnectToSharedMemory(_args.rewardMemoryName);
 
             // Give control back to the client
-            _clientMutex.ReleaseMutex();
+            _lockClientPool.Release();
+        }
+
+        public void WaitForInstruction(Action<InstructionCode> instructionHandler)
+        {
+            // Wait for the client
+            // TODO: this really looks like it need a success/fail mechanism to avoid querying a failing server
+            _lockServerPool.WaitOne();
+            try
+            {
+                Instruction instruction = ReadStructFromSharedMemory<Instruction>(_instructionSM);
+                instructionHandler(instruction.code);
+            }
+            finally
+            {
+                // Answer to the client
+                _lockClientPool.Release();
+            }
         }
 
         private MemoryMappedViewAccessor ConnectToSharedMemory(string name)
@@ -92,10 +98,21 @@ namespace HighwayPursuitServer.Server
             }
         }
 
+        public void Log(string _)
+        {
+            // TODO
+        }
+
         private static void CopyStructToSharedMemory<T>(T data, MemoryMappedViewAccessor accessor) where T : struct
         {
             byte[] buffer = StructToBytes(data);
             accessor.WriteArray(0, buffer, 0, buffer.Length);
+        }
+
+        private static T ReadStructFromSharedMemory<T>(MemoryMappedViewAccessor accessor) where T : struct
+        {
+            accessor.Read(0, out T result);
+            return result;
         }
 
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
