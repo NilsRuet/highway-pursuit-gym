@@ -130,22 +130,18 @@ class HighwayPursuitClient:
         self.instruction_sm.buf[:len(bytes)] = bytes
 
     def reset(self):
-        # TODO:
-        # return observation, info
+        self._sync_instruction(Instruction(Instruction.RESET))
+        # state, info
         return None, None
 
     def step(self, action):
-        # TODO:
+        self._sync_instruction(Instruction(Instruction.STEP))
         # return observation, reward, terminated, truncated, info
         return None, None, True, True, None
 
     def close(self):
         # Write the close instruction to the instruction buffer
-        self._write_instruction_unsafe(Instruction(Instruction.CLOSE))
-        self.lock_server_pool.release()
-
-        # Wait for server to acknowledge
-        self.lock_client_pool.acquire()
+        self._sync_instruction(Instruction(Instruction.CLOSE))
 
         # At this point, the server shouldn't use any shared resource
         # Clean up everything
@@ -163,3 +159,8 @@ class HighwayPursuitClient:
 
         self.lock_client_pool.close()
         self.lock_server_pool.close()
+
+    def _sync_instruction(self, instruction):
+        self._write_instruction_unsafe(instruction)
+        self.lock_server_pool.release()
+        self.lock_client_pool.acquire()
