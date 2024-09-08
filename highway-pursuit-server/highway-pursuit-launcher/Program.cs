@@ -9,61 +9,80 @@ namespace HighwayPursuitLauncher
 {
     class Program
     {
+        const int ARG_COUNT = 10;
+        const int SERVER_ARG_COUNT = ARG_COUNT - 2;
+        const int SHARED_RESOURCES_ARGS_OFFSET = 3;
+
+        enum ExitCode : int
+        {
+            Success = 0,
+            InvalidArgs = 1,
+            InjectionFailed = 2
+        }
+
         static void Main(string[] args)
         {
-            string channelName = null;
-
-            ProcessArgs(args, out string targetExe);
-
-            if (string.IsNullOrEmpty(targetExe)) return;
-
-            // Create the IPC server using the FileMonitorIPC.ServiceInterface class as a singleton
-            EasyHook.RemoteHooking.IpcCreateServer<HighwayPursuitServer.ServerInterface>(ref channelName, System.Runtime.Remoting.WellKnownObjectMode.Singleton);
-
-            string injectionLibrary = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "HighwayPursuitServer.dll");
+            if (!ProcessArgs(args, out string targetExe, out string targetDll))
+            {
+                Environment.Exit((int)ExitCode.InvalidArgs);
+            }
 
             try
             {
-                Console.WriteLine("Attempting to create and inject into {0}", targetExe);
+                string[] serverArgs = new string[SERVER_ARG_COUNT];
+                Array.Copy(args, ARG_COUNT - SERVER_ARG_COUNT, serverArgs, 0, SERVER_ARG_COUNT);
+
                 // start and inject into a new process
                 EasyHook.RemoteHooking.CreateAndInject(
                     targetExe,
                     "",
                     0,
                     EasyHook.InjectionOptions.DoNotRequireStrongName,
-                    injectionLibrary,
-                    injectionLibrary,
+                    targetDll,
+                    targetDll,
                     out _,
-                    channelName
+                    serverArgs
                 );
             }
-            catch (Exception e)
+            catch (Exception)
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine("There was an error while injecting into target:");
-                Console.ResetColor();
-                Console.WriteLine(e.ToString());
+                Environment.Exit((int)ExitCode.InjectionFailed);
             }
-            Console.WriteLine("Success!");
-            Console.WriteLine("<Press any key to exit>");
-            Console.ResetColor();
-            Console.ReadKey();
         }
 
-        static void ProcessArgs(string[] args, out string targetExe)
+        static bool ProcessArgs(string[] args, out string targetExe, out string targetDll)
         {
-            targetExe = null;
-            Console.WriteLine("Starting Highway pursuit...");
 
-            // Load any parameters
-            if (args.Length != 1 || !File.Exists(args[0]))
+            // Check arg count
+            if(args.Length != ARG_COUNT)
             {
-                Console.WriteLine("Usage: HighwayPursuitLauncher PathToExecutable");
+                targetExe = null;
+                targetDll = null;
+                return false;
             }
-            else
+
+            // Check paths
+            targetExe = args[0];
+            targetDll = args[1];
+            if (string.IsNullOrEmpty(targetDll) || string.IsNullOrEmpty(targetDll))
             {
-                targetExe = args[0];
+                return false;
             }
+
+            if(!File.Exists(targetExe) || !File.Exists(targetDll))
+            {
+                return false;
+            }
+
+            // isRealTime, arg[2], is not checked because it will be defaulted to false if needed 
+
+            // Check resource names (all remaining args)
+            for (int i = SHARED_RESOURCES_ARGS_OFFSET; i < args.Length; i++)
+            {
+                if (string.IsNullOrEmpty(args[i])) return false;
+            }
+
+            return true;
         }
     }
 }

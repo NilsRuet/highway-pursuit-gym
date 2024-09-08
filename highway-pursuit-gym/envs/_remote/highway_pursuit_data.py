@@ -19,7 +19,7 @@ class Instruction(ctypes.Structure):
 
 class Info(ctypes.Structure):
     _fields_ = (
-        ('tps', ctypes.c_uint),
+        ('tps', ctypes.c_float),
         ('memory', ctypes.c_float),
     )
 

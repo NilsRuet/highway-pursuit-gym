@@ -191,7 +191,7 @@ namespace HighwayPursuitServer.Server
                     memorySize = proc.PrivateMemorySize64 / (1024.0*1024.0);
                 }
 
-                    Report($"step {_step} -> {tps:0} ticks/s = x{ratio:0.#} | RAM:{memorySize:0.##}Mb");
+                Report($"step {_step} -> {tps:0} ticks/s = x{ratio:0.#} | RAM:{memorySize:0.##}Mb");
                 startTick = Environment.TickCount;
             }
         }

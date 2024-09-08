@@ -27,9 +27,10 @@ class Mutex():
         return kernel32.CloseHandle(self._mutex)
 
 class HighwayPursuitClient:
-    def __init__(self, launcher_path, highway_pursuit_path, is_real_time = False):
+    def __init__(self, launcher_path, highway_pursuit_path, dll_path, is_real_time = False):
         self.launcher_path = launcher_path
         self.highway_pursuit_path = highway_pursuit_path
+        self.dll_path = dll_path
         self.is_real_time = is_real_time
 
     def create_process_and_connect(self):
@@ -63,6 +64,7 @@ class HighwayPursuitClient:
         command = [
             self.launcher_path,
             self.highway_pursuit_path,
+            self.dll_path,
             self.is_real_time,
             self.lock_server_name,
             self.lock_client_name,
@@ -73,7 +75,9 @@ class HighwayPursuitClient:
             self.reward_memory_name
         ]
         # Run the command
-        self.server_process = subprocess.Popen(command, capture_output=False, text=False)
+        result = subprocess.run(command, capture_output=False, text=False)
+        # TODO: handle error codes
+        # TODO: maybe get the PID of the server back such that it can be killed in case it stops responding
 
     def setup_server(self):
         # Create the mutex for synchronization
