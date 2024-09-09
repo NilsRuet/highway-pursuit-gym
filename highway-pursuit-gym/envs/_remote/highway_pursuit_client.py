@@ -145,7 +145,9 @@ class HighwayPursuitClient:
         return observation, reward, termination.terminated, termination.truncated, info
 
     def _read_observation(self):
-        return np.copy(np.ndarray(self.observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf)[:, :, :3])
+        array = np.ndarray(self.observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf)
+        array.flags.writeable = False
+        return np.copy(array)[:, :, :3]
 
     def close(self):
         # Write the close instruction to the instruction buffer

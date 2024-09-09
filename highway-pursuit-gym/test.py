@@ -1,6 +1,7 @@
 import numpy as np
 from envs import HighwayPursuitEnv
 import matplotlib.pyplot as plt
+import time
 
 def main():
     launcher_path = "..\\highway-pursuit-server\\highway-pursuit-launcher\\bin\\Debug\\HighwayPursuitLauncher.exe"
@@ -8,6 +9,8 @@ def main():
     app_path = "C:\\Program Files (x86)\\HighwayPursuit\\HighwayPursuit.exe"
 
     images = []
+
+    t0 = time.time()
 
     env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False)
     observation, info = env.reset()
@@ -18,6 +21,8 @@ def main():
 
     done = False
     step_count = 0
+
+
     while not done and step_count < 1000:
         action = env.action_space.sample()
         observation, reward, terminated, truncated, info = env.step(action)
@@ -26,11 +31,7 @@ def main():
         step_count+=1
     env.close()
 
-    input("Waiting for key press..")
-    for image in images[::]:
-        plt.imshow(image)
-        plt.axis('off')
-        plt.show()
+    print(f"1000 steps in {time.time() - t0}")
 
 if __name__ == "__main__":
     main()
