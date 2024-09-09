@@ -129,7 +129,8 @@ class HighwayPursuitClient:
         self._sync_instruction(Instruction(Instruction.RESET))
         # Result
         info: Info = Info.from_buffer_copy(self._info_sm.buf)
-        observation = np.ndarray(self.observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf)
+        # The copy allow unlinking the data
+        observation = np.copy(np.ndarray(self.observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf))
 
         return observation, info
 

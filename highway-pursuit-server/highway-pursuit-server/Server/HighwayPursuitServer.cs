@@ -102,11 +102,11 @@ namespace HighwayPursuitServer.Server
             // Main loop
             while (!cts.IsCancellationRequested && !_terminated)
             {
-                _communicationManager.WaitForInstruction(OnInstruction);
+                _communicationManager.WaitForInstruction(HandleInstruction);
             }
         }
 
-        private void OnInstruction(InstructionCode code)
+        private void HandleInstruction(InstructionCode code)
         {
             switch (code)
             {
@@ -134,10 +134,18 @@ namespace HighwayPursuitServer.Server
 
         private void Reset()
         {
+            // Reset the episode
             _lockServerPool.WaitOne();
             _episodeService.NewGame();
             _updateService.UpdateTime();
             _lockUpdatePool.Release();
+
+            // Wait for one frame for the new episode starting state
+            _lockServerPool.WaitOne();
+            // Transfer state/info
+            _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
+            _communicationManager.WriteInfoBuffer(new Info(1.0f, 2.0f));
+            _lockServerPool.Release();
         }
 
         // Fast game update
@@ -177,18 +185,13 @@ namespace HighwayPursuitServer.Server
             // Receive action (or reset) from the gym env
             // TODO
 
-            // Setup actions TODO: load inputs from policy
+            // Setup actions
+            // TODO: load actions using the comm manager
+            // TODO: actions are effectively delayed. This doesn't take effect during the current transition but during the next one.
             _inputService.SetInput(new List<Input> { Input.Accelerate, Input.Fire });
 
             // Get game state
-            try
-            {
-                _direct3D8Service.Screenshot(); //TODO: how to collect/send the data?
-            }
-            catch (D3DERR e)
-            {
-                _hookManager.Log(e.Message);
-            }
+            // _direct3D8Service.Screenshot();
 
             // Get reward
             var reward = _scoreService.PullReward();

@@ -46,7 +46,7 @@ namespace HighwayPursuitServer.Server
             _serverInfoSM = ConnectToSharedMemory(_args.serverInfoMemoryName);
 
             var serverInfo = new ServerInfo(640, 480, 3, 8); // TODO: get the actual values
-            CopyStructToSharedMemory(serverInfo, _serverInfoSM);
+            WriteStructToSharedMemory(serverInfo, _serverInfoSM);
 
             _lockClientPool.Release();
 
@@ -81,6 +81,54 @@ namespace HighwayPursuitServer.Server
             }
         }
 
+        public void WriteObservationBuffer(IntPtr buffer, D3DFORMAT format)
+        {
+            const int pixelCount = 640 * 480; // TODO dynamically compute pixel buffer size
+            unsafe // The C# incident
+            {
+                byte* memoryPtr = (byte*)0;
+                try
+                {
+                    _observationSM.SafeMemoryMappedViewHandle.AcquirePointer(ref memoryPtr);
+
+                    // Copy memory accordingly
+                    switch (format)
+                    {
+                        case D3DFORMAT.D3DFMT_X8R8G8B8:
+                            const int channels = 4;
+                            const int offset = 0; // Strangely, the pixel format is RGBX and not XRGB
+                            const int pixelSize = 3;
+
+                            byte* bufferPtr = (byte*)buffer.ToPointer();
+
+                            // Get rid of the X8 channel
+                            for (int i = 0; i < pixelCount; i++)
+                            {
+                                byte* src = bufferPtr + i * channels + offset;
+                                byte* dst = memoryPtr + i * pixelSize;
+                                UnsafeCopyMemory(dst, src, pixelSize);
+                            }
+                            break;
+                        default:
+                            // TODO: handle error
+                            break;
+                    }
+                }
+                finally
+                {
+                    if (memoryPtr != (byte*)0)
+                    {
+                        _observationSM.SafeMemoryMappedViewHandle.ReleasePointer();
+                    }
+                }
+            }
+        }
+
+        public void WriteInfoBuffer(Info info)
+        {
+            WriteStructToSharedMemory(info, _infoSM);
+        }
+
         private MemoryMappedViewAccessor ConnectToSharedMemory(string name)
         {
             var mmf = MemoryMappedFile.OpenExisting(name);
@@ -105,7 +153,7 @@ namespace HighwayPursuitServer.Server
             // TODO
         }
 
-        private static void CopyStructToSharedMemory<T>(T data, MemoryMappedViewAccessor accessor) where T : struct
+        private static void WriteStructToSharedMemory<T>(T data, MemoryMappedViewAccessor accessor) where T : struct
         {
             byte[] buffer = StructToBytes(data);
             accessor.WriteArray(0, buffer, 0, buffer.Length);
@@ -119,6 +167,9 @@ namespace HighwayPursuitServer.Server
 
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
         private static extern void CopyMemory(IntPtr dest, IntPtr src, uint count);
+
+        [DllImport("Kernel32.dll", EntryPoint = "RtlMoveMemory")]
+        private static unsafe extern void UnsafeCopyMemory(void* dest, void* src, int size);
 
         private static byte[] StructToBytes<T>(T obj) where T : struct
         {
