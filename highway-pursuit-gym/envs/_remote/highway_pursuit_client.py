@@ -101,7 +101,7 @@ class HighwayPursuitClient:
 
         # Retrieve the server info
         server_info: ServerInfo = ServerInfo.from_buffer_copy(self._server_info_sm.buf)
-        self.observation_shape = (server_info.obs_width, server_info.obs_height, server_info.obs_channels)
+        self.observation_shape = (server_info.obs_height, server_info.obs_width, server_info.obs_channels)
         self.action_count = server_info.action_count
         
         # Create the remaining shared memory
@@ -128,7 +128,7 @@ class HighwayPursuitClient:
         # Result
         info: Info = Info.from_buffer_copy(self._info_sm.buf)
         # The copy allow unlinking the data
-        observation = np.copy(np.ndarray(self.observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf))
+        observation = self._read_observation()
 
         return observation, info
 
@@ -138,11 +138,14 @@ class HighwayPursuitClient:
         self._sync_wait_for_serv()
 
         # return observation, reward, terminated, truncated, info
-        observation = np.copy(np.ndarray(self.observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf))
+        observation = self._read_observation()
         reward: Reward = Reward.from_buffer_copy(self._reward_sm.buf)
         info: Info = Info.from_buffer_copy(self._info_sm.buf)
         termination: Termination = Termination.from_buffer_copy(self._termination_sm.buf)
         return observation, reward, termination.terminated, termination.truncated, info
+
+    def _read_observation(self):
+        return np.copy(np.ndarray(self.observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf)[:, :, :3])
 
     def close(self):
         # Write the close instruction to the instruction buffer

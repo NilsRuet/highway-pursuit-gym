@@ -47,7 +47,7 @@ namespace HighwayPursuitServer.Server
             // Open the server info memory map
             _serverInfoSM = ConnectToSharedMemory(_args.serverInfoMemoryName);
 
-            var serverInfo = new ServerInfo(480, 640, 3, 8); // TODO: get the actual values
+            var serverInfo = new ServerInfo(480, 640, 4, 8); // TODO: get the actual values
             WriteStructToSharedMemory(serverInfo, _serverInfoSM);
 
             _lockClientPool.Release();
@@ -106,42 +106,27 @@ namespace HighwayPursuitServer.Server
         public void WriteObservationBuffer(IntPtr buffer, D3DFORMAT format)
         {
             const int pixelCount = 640 * 480; // TODO dynamically compute pixel buffer size
-            unsafe // The C# incident
+            bool success = false;
+            try
             {
-                byte* memoryPtr = (byte*)0;
-                try
+                _observationSM.SafeMemoryMappedViewHandle.DangerousAddRef(ref success);
+                IntPtr memoryPtr = _observationSM.SafeMemoryMappedViewHandle.DangerousGetHandle();
+                switch (format)
                 {
-                    _observationSM.SafeMemoryMappedViewHandle.AcquirePointer(ref memoryPtr);
-
-                    // Copy memory accordingly
-                    switch (format)
-                    {
-                        case D3DFORMAT.D3DFMT_X8R8G8B8:
-                            const int channels = 4;
-                            const int offset = 0; // Strangely, the pixel format is RGBX and not XRGB
-                            const int pixelSize = 3;
-
-                            byte* bufferPtr = (byte*)buffer.ToPointer();
-
-                            // Get rid of the X8 channel
-                            for (int i = 0; i < pixelCount; i++)
-                            {
-                                byte* src = bufferPtr + i * channels + offset;
-                                byte* dst = memoryPtr + i * pixelSize;
-                                UnsafeCopyMemory(dst, src, pixelSize);
-                            }
-                            break;
-                        default:
-                            // TODO: handle error
-                            break;
-                    }
+                    case D3DFORMAT.D3DFMT_X8R8G8B8:
+                        const int channels = 4;
+                        CopyMemory(memoryPtr, buffer, channels * pixelCount);
+                        break;
+                    default:
+                        // TODO: handle error
+                        break;
                 }
-                finally
+            }
+            finally
+            {
+                if (success)
                 {
-                    if (memoryPtr != (byte*)0)
-                    {
-                        _observationSM.SafeMemoryMappedViewHandle.ReleasePointer();
-                    }
+                    _observationSM.SafeMemoryMappedViewHandle.DangerousRelease();
                 }
             }
         }
@@ -199,9 +184,6 @@ namespace HighwayPursuitServer.Server
 
         [DllImport("kernel32.dll", EntryPoint = "RtlMoveMemory")]
         private static extern void CopyMemory(IntPtr dest, IntPtr src, uint count);
-
-        [DllImport("Kernel32.dll", EntryPoint = "RtlMoveMemory")]
-        private static unsafe extern void UnsafeCopyMemory(void* dest, void* src, int size);
 
         private static byte[] StructToBytes<T>(T obj) where T : struct
         {
