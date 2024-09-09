@@ -82,6 +82,7 @@ class HighwayPursuitClient:
         info_memory_name = f"{self._app_resources_id}{info_memory_id}"
         reward_memory_name = f"{self._app_resources_id}{reward_memory_id}" 
         action_memory_name = f"{self._app_resources_id}{action_memory_id}" 
+        termination_memory_name = f"{self._app_resources_id}{termination_memory_id}" 
 
         # Create semaphores for synchronization
         # Initially no availability
@@ -107,6 +108,7 @@ class HighwayPursuitClient:
         self._instruction_sm = shared_memory.SharedMemory(name=instruction_memory_name, size=ctypes.sizeof(Instruction), create=True)
         self._info_sm = shared_memory.SharedMemory(name=info_memory_name, size=ctypes.sizeof(Info), create=True)
         self._reward_sm = shared_memory.SharedMemory(name=reward_memory_name, size=ctypes.sizeof(Reward), create=True)
+        self._termination_sm = shared_memory.SharedMemory(name=termination_memory_name, size=ctypes.sizeof(Termination), create=True)
 
         observation_buffer_size = np.prod(self.observation_shape).item()
         action_buffer_size = self.action_count # one byte per action
@@ -119,14 +121,10 @@ class HighwayPursuitClient:
         # Lock the client mutex to ensure the server is in wait mode
         self._lock_client_pool.acquire()
 
-    def _write_instruction_unsafe(self, instruction: Instruction):
-        """This writes an instruction in the appropriate shared memory, without synchronization"""
-        bytes = bytearray(instruction)
-        self._instruction_sm.buf[:len(bytes)] = bytes
-
     def reset(self):
         # Query
-        self._sync_instruction(Instruction(Instruction.RESET))
+        self._write_instruction(Instruction(Instruction.RESET))
+        self._sync_wait_for_serv()
         # Result
         info: Info = Info.from_buffer_copy(self._info_sm.buf)
         # The copy allow unlinking the data
@@ -135,13 +133,21 @@ class HighwayPursuitClient:
         return observation, info
 
     def step(self, action):
-        self._sync_instruction(Instruction(Instruction.STEP))
+        self._write_action(action)
+        self._write_instruction(Instruction(Instruction.STEP))
+        self._sync_wait_for_serv()
+
         # return observation, reward, terminated, truncated, info
-        return None, None, True, True, None
+        observation = np.copy(np.ndarray(self.observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf))
+        reward: Reward = Reward.from_buffer_copy(self._reward_sm.buf)
+        info: Info = Info.from_buffer_copy(self._info_sm.buf)
+        termination: Termination = Termination.from_buffer_copy(self._termination_sm.buf)
+        return observation, reward, termination.terminated, termination.truncated, info
 
     def close(self):
         # Write the close instruction to the instruction buffer
-        self._sync_instruction(Instruction(Instruction.CLOSE))
+        self._write_instruction(Instruction(Instruction.CLOSE))
+        self._sync_wait_for_serv()
 
         # At this point, the server shouldn't use any shared resource
         # Clean up everything
@@ -151,6 +157,7 @@ class HighwayPursuitClient:
         self._info_sm.close()
         self._reward_sm.close()
         self._action_sm.close()
+        self._termination_sm.close()
 
         self._server_info_sm.unlink()
         self._instruction_sm.unlink()
@@ -158,11 +165,21 @@ class HighwayPursuitClient:
         self._info_sm.unlink()
         self._reward_sm.unlink()
         self._action_sm.unlink()
+        self._termination_sm.unlink()
 
         self._lock_client_pool.close()
         self._lock_server_pool.close()
 
-    def _sync_instruction(self, instruction):
-        self._write_instruction_unsafe(instruction)
+    def _write_action(self, action: np.ndarray):
+        # Write an action in the appropriate buffer
+        bytes = bytearray(action)
+        self._action_sm.buf[:len(bytes)] = bytes
+
+    def _write_instruction(self, instruction: Instruction):
+        # Write an instruction in the appropriate buffer
+        bytes = bytearray(instruction)
+        self._instruction_sm.buf[:len(bytes)] = bytes
+
+    def _sync_wait_for_serv(self):
         self._lock_server_pool.release()
         self._lock_client_pool.acquire()

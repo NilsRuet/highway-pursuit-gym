@@ -28,4 +28,10 @@ class Reward(ctypes.Structure):
         ('reward', ctypes.c_uint),
     )
 
+class Termination(ctypes.Structure):
+    _fields_ = (
+        ('terminated', ctypes.c_byte),
+        ('truncated', ctypes.c_byte)
+    )
+
 # Observation struct is not included because its size is dynamic based on the server config
