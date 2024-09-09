@@ -5,12 +5,9 @@ import uuid
 import subprocess
 from multiprocessing import shared_memory
 from envs._remote.highway_pursuit_data import *
+from envs._remote.shared_names import *
 
 kernel32 = ctypes.windll.kernel32
-global_mutex_prefix = "Global\\"
-
-def generate_unique_name():
-    return str(uuid.uuid1())
 
 class Semaphore():
     INFINITE = 0xFFFFFFFF
@@ -51,15 +48,8 @@ class HighwayPursuitClient:
         int: action count
         """
         # Generate name for mutex and share memory sections
-        self.lock_server_name = f"{global_mutex_prefix}{generate_unique_name()}"
-        self.lock_client_name = f"{global_mutex_prefix}{generate_unique_name()}"
 
-        self.server_info_memory_name = generate_unique_name()
-        self.instruction_memory_name = generate_unique_name()
-        self.observation_memory_name = generate_unique_name()
-        self.info_memory_name = generate_unique_name()
-        self.reward_memory_name = generate_unique_name()
-
+        self.app_resources_id = f"{str(uuid.uuid1())}-"
         # Setup the server and the data formats
         self.setup_server()
         return self.observation_shape, self.action_count
@@ -71,13 +61,7 @@ class HighwayPursuitClient:
             self.highway_pursuit_path,
             self.dll_path,
             str(self.is_real_time),
-            self.lock_server_name,
-            self.lock_client_name,
-            self.server_info_memory_name,
-            self.instruction_memory_name,
-            self.observation_memory_name,
-            self.info_memory_name,
-            self.reward_memory_name
+            self.app_resources_id
         ]
 
         # Run the command
@@ -85,23 +69,32 @@ class HighwayPursuitClient:
         if(result.returncode != 0):
             raise Exception(f"HighwayPursuit launcher failed with code {result.returncode}")
 
-        # TODO: handle error codes
         # TODO: maybe get the PID of the server back such that it can be killed in case it stops responding
 
     def setup_server(self):
-        # Create semaphores for synchronization
+        # Define shared resources names
+        lock_server_name = f"{self.app_resources_id}{server_mutex_id}"
+        lock_client_name = f"{self.app_resources_id}{client_mutex_id}"
 
+        server_info_memory_name = f"{self.app_resources_id}{server_info_memory_id}"
+        instruction_memory_name = f"{self.app_resources_id}{instruction_memory_id}"
+        observation_memory_name = f"{self.app_resources_id}{observation_memory_id}"
+        info_memory_name = f"{self.app_resources_id}{info_memory_id}"
+        reward_memory_name = f"{self.app_resources_id}{reward_memory_id}" 
+        action_memory_name = f"{self.app_resources_id}{action_memory_id}" 
+
+        # Create semaphores for synchronization
         # Initially no availability
-        self.lock_server_pool = Semaphore(self.lock_server_name, initial_count=0, max_count=1) 
-        self.lock_client_pool = Semaphore(self.lock_client_name, initial_count=0, max_count=1)
+        self.lock_server_pool = Semaphore(lock_server_name, initial_count=0, max_count=1) 
+        self.lock_client_pool = Semaphore(lock_client_name, initial_count=0, max_count=1)
 
         # Create the initial shared memory for retrieving server info
-        self.server_info_sm = shared_memory.SharedMemory(name= self.server_info_memory_name, size=ctypes.sizeof(ServerInfo), create=True)
+        self.server_info_sm = shared_memory.SharedMemory(name=server_info_memory_name, size=ctypes.sizeof(ServerInfo), create=True)
         
         # Start the server process
         self._start_process()
-        # Notify server that server info is ready to be retrieved, and wait for the operation to complete
 
+        # Notify server that server info is ready to be retrieved, and wait for the operation to complete
         self.lock_server_pool.release()
         self.lock_client_pool.acquire()
 
@@ -111,12 +104,14 @@ class HighwayPursuitClient:
         self.action_count = server_info.action_count
         
         # Create the remaining shared memory
-        self.instruction_sm = shared_memory.SharedMemory(name=self.instruction_memory_name, size=ctypes.sizeof(Instruction), create=True)
-        self.info_sm = shared_memory.SharedMemory(name=self.info_memory_name, size=ctypes.sizeof(Info), create=True)
-        self.reward_sm = shared_memory.SharedMemory(name=self.reward_memory_name, size=ctypes.sizeof(Reward), create=True)
+        self.instruction_sm = shared_memory.SharedMemory(name=instruction_memory_name, size=ctypes.sizeof(Instruction), create=True)
+        self.info_sm = shared_memory.SharedMemory(name=info_memory_name, size=ctypes.sizeof(Info), create=True)
+        self.reward_sm = shared_memory.SharedMemory(name=reward_memory_name, size=ctypes.sizeof(Reward), create=True)
 
         observation_buffer_size = np.prod(self.observation_shape).item()
-        self.observation_sm = shared_memory.SharedMemory(name=self.observation_memory_name, size=observation_buffer_size, create=True)
+        action_buffer_size = self.action_count # one byte per action
+        self.observation_sm = shared_memory.SharedMemory(name=observation_memory_name, size=observation_buffer_size, create=True)
+        self.action_sm = shared_memory.SharedMemory(name=action_memory_name, size=action_buffer_size, create=True)
 
         # Release the server, it will connect to the shared memory sections
         self.lock_server_pool.release()
@@ -150,12 +145,14 @@ class HighwayPursuitClient:
         self.observation_sm.close()
         self.info_sm.close()
         self.reward_sm.close()
+        self.action_sm.close()
 
         self.server_info_sm.unlink()
         self.instruction_sm.unlink()
         self.observation_sm.unlink()
         self.info_sm.unlink()
         self.reward_sm.unlink()
+        self.action_sm.unlink()
 
         self.lock_client_pool.close()
         self.lock_server_pool.close()

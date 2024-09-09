@@ -24,6 +24,7 @@ namespace HighwayPursuitServer.Server
         private MemoryMappedViewAccessor _observationSM;
         private MemoryMappedViewAccessor _infoSM;
         private MemoryMappedViewAccessor _rewardSM;
+        private MemoryMappedViewAccessor _actionSM;
 
         private readonly List<IDisposable> _disposableResources = new List<IDisposable>();
 
@@ -57,6 +58,7 @@ namespace HighwayPursuitServer.Server
             _observationSM = ConnectToSharedMemory(_args.observationMemoryName);
             _infoSM = ConnectToSharedMemory(_args.infoMemoryName);
             _rewardSM = ConnectToSharedMemory(_args.rewardMemoryName);
+            _actionSM = ConnectToSharedMemory(_args.actionMemoryName);
 
             // Give control back to the client
             _lockClientPool.Release();

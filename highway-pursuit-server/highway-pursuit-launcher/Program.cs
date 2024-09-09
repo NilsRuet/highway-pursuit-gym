@@ -12,7 +12,12 @@ namespace HighwayPursuitLauncher
 {
     class Program
     {
-        const int ARG_COUNT = 10;
+        const int ARG_EXE = 0;
+        const int ARG_DLL = 1;
+        const int ARG_REAL_TIME = 2;
+        const int ARG_SHARED_RESOURCES_PREFIX = 3;
+        const int TOTAL_ARGS = 4;
+
         const int SERVER_ARGS_OFFSET = 2;
 
         enum ExitCode : int
@@ -39,14 +44,9 @@ namespace HighwayPursuitLauncher
 
                 var options = new ServerOptions(
                     isRealTime,
-                    args[SERVER_ARGS_OFFSET + 1],
-                    args[SERVER_ARGS_OFFSET + 2],
-                    args[SERVER_ARGS_OFFSET + 3],
-                    args[SERVER_ARGS_OFFSET + 4],
-                    args[SERVER_ARGS_OFFSET + 5],
-                    args[SERVER_ARGS_OFFSET + 6],
-                    args[SERVER_ARGS_OFFSET + 7]
+                    args[ARG_SHARED_RESOURCES_PREFIX]
                 );
+
                 // start and inject into a new process
                 EasyHook.RemoteHooking.CreateAndInject(
                     targetExe,
@@ -69,7 +69,7 @@ namespace HighwayPursuitLauncher
         {
 
             // Check arg count
-            if(args.Length != ARG_COUNT)
+            if(args.Length != TOTAL_ARGS)
             {
                 targetExe = null;
                 targetDll = null;
@@ -77,8 +77,8 @@ namespace HighwayPursuitLauncher
             }
 
             // Check paths
-            targetExe = args[0];
-            targetDll = args[1];
+            targetExe = args[ARG_EXE];
+            targetDll = args[ARG_DLL];
             if (string.IsNullOrEmpty(targetDll) || string.IsNullOrEmpty(targetDll))
             {
                 return false;
@@ -89,11 +89,15 @@ namespace HighwayPursuitLauncher
                 return false;
             }
 
-            // Check other args (isRealTime which is always defaulted, and the resource names)
-            // TODO: maybe a warning is isRealTime is not a proper bool str?
-            for (int i = SERVER_ARGS_OFFSET; i < args.Length; i++)
+            if (string.IsNullOrEmpty(args[ARG_REAL_TIME]))
             {
-                if (string.IsNullOrEmpty(args[i])) return false;
+                return false;
+            }
+
+            // Check shared resource name
+            if (string.IsNullOrEmpty(args[ARG_SHARED_RESOURCES_PREFIX]))
+            {
+                return false;
             }
 
             return true;
