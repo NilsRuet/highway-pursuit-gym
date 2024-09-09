@@ -12,6 +12,7 @@ namespace HighwayPursuitServer.Injected
 {
     class Direct3D8Service
     {
+        private const float FULL_ZOOM = 10.0f;
         private readonly IHookManager _hookManager;
         private const D3DFORMAT PIXEL_FORMAT = D3DFORMAT.D3DFMT_X8R8G8B8;
         public IntPtr Device => GetDevice();
@@ -73,6 +74,16 @@ namespace HighwayPursuitServer.Injected
                 _currentWidth = displayMode.Width;
                 _currentHeight = displayMode.Height;
             }
+        }
+
+        public void ResetZoomLevel()
+        {
+            IntPtr module = _hookManager.GetModuleBase();
+            IntPtr zoomAnimValue = new IntPtr(module.ToInt32() + MemoryAdresses.CAMERA_ZOOM_ANIM_OFFSET);
+
+            // Write float value into the camera zoom value offset
+            byte[] bytes = BitConverter.GetBytes(FULL_ZOOM);
+            Marshal.Copy(bytes, 0, zoomAnimValue, bytes.Length);
         }
 
         public void Screenshot(Action<IntPtr, D3DFORMAT> pixelDataHandler)

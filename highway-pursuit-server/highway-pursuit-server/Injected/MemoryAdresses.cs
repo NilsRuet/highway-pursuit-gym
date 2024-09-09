@@ -15,6 +15,7 @@ namespace HighwayPursuitServer.Injected
         public const uint GET_LIFE_COUNT_OFFSET = 0x15C70;
         public const uint SET_SCORE_OFFSET = 0x15C00;
         public const uint DEVICE_PTR_OFFSET = 0x960CC;
+        public const uint CAMERA_ZOOM_ANIM_OFFSET = 0x7C1E4;
         public const uint ACCELERATE_OFFSET = 0x969E8;
         public const uint BRAKE_OFFSET = 0x969EC;
         public const uint STEER_L_OFFSET = 0x969F0;

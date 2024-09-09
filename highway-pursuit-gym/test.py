@@ -22,8 +22,7 @@ def main():
     done = False
     step_count = 0
 
-
-    while not done and step_count < 1000:
+    while not done and step_count < 500:
         action = env.action_space.sample()
         observation, reward, terminated, truncated, info = env.step(action)
         done = truncated or terminated
@@ -32,6 +31,12 @@ def main():
     env.close()
 
     print(f"1000 steps in {time.time() - t0}")
+    input("Waiting for key press...")
+
+    for image in images:
+        plt.imshow(image)
+        plt.show()
+
 
 if __name__ == "__main__":
     main()

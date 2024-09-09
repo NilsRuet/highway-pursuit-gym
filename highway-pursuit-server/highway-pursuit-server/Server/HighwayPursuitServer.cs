@@ -148,6 +148,7 @@ namespace HighwayPursuitServer.Server
             WaitUpdateAndExecute(() =>
             {
                 _episodeService.NewGame();
+                _direct3D8Service.ResetZoomLevel();
                 _updateService.UpdateTime();
             });
 
