@@ -2,8 +2,8 @@ import ctypes
 
 class ServerInfo(ctypes.Structure):
     _fields_ = (
-        ('obs_width', ctypes.c_uint),
         ('obs_height', ctypes.c_uint),
+        ('obs_width', ctypes.c_uint),
         ('obs_channels', ctypes.c_uint),
         ('action_count', ctypes.c_uint)
     )

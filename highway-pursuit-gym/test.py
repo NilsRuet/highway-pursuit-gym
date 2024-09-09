@@ -27,7 +27,7 @@ def main():
     env.close()
 
     input("Waiting for key press..")
-    for image in images[::100]:
+    for image in images[::]:
         plt.imshow(image)
         plt.axis('off')
         plt.show()

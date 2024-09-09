@@ -47,7 +47,7 @@ namespace HighwayPursuitServer.Server
             // Open the server info memory map
             _serverInfoSM = ConnectToSharedMemory(_args.serverInfoMemoryName);
 
-            var serverInfo = new ServerInfo(640, 480, 3, 8); // TODO: get the actual values
+            var serverInfo = new ServerInfo(480, 640, 3, 8); // TODO: get the actual values
             WriteStructToSharedMemory(serverInfo, _serverInfoSM);
 
             _lockClientPool.Release();

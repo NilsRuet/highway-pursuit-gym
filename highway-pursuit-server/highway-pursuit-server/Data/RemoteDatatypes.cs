@@ -10,14 +10,14 @@ namespace HighwayPursuitServer.Data
     [StructLayout(LayoutKind.Sequential)]
     public struct ServerInfo
     {
-        public uint obsWidth;
         public uint obsHeight;
+        public uint obsWidth;
         public uint obsChannels;
         public uint actionCount;
-        public ServerInfo(uint obsWidth, uint obsHeight, uint obsChannels, uint actionCount)
+        public ServerInfo(uint obsHeight, uint obsWidth, uint obsChannels, uint actionCount)
         {
-            this.obsWidth = obsWidth;
             this.obsHeight = obsHeight;
+            this.obsWidth = obsWidth;
             this.obsChannels = obsChannels;
             this.actionCount = actionCount;
         }
