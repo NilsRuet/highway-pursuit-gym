@@ -1,4 +1,5 @@
 ﻿using HighwayPursuitServer.Data;
+using HighwayPursuitServer.Injected;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -25,6 +26,7 @@ namespace HighwayPursuitServer.Server
         private MemoryMappedViewAccessor _infoSM;
         private MemoryMappedViewAccessor _rewardSM;
         private MemoryMappedViewAccessor _actionSM;
+        private MemoryMappedViewAccessor _terminationSM;
 
         private readonly List<IDisposable> _disposableResources = new List<IDisposable>();
 
@@ -59,6 +61,7 @@ namespace HighwayPursuitServer.Server
             _infoSM = ConnectToSharedMemory(_args.infoMemoryName);
             _rewardSM = ConnectToSharedMemory(_args.rewardMemoryName);
             _actionSM = ConnectToSharedMemory(_args.actionMemoryName);
+            _terminationSM = ConnectToSharedMemory(_args.terminationMemoryName);
 
             // Give control back to the client
             _lockClientPool.Release();
@@ -79,6 +82,25 @@ namespace HighwayPursuitServer.Server
                 // Answer to the client
                 _lockClientPool.Release();
             }
+        }
+
+        public List<Input> ReadActions()
+        {
+            const int actionCount = 8; // TODO: get from somewhere else
+            List<Input> actions = new List<Input>();
+
+            // Convert each non-zero byte to the corresponding action
+            byte[] actionsTaken = new byte[actionCount];
+            _actionSM.ReadArray(0, actionsTaken, 0, actionCount);
+            for(int actionIndex = 0; actionIndex < actionCount; actionIndex++)
+            {
+                if(actionsTaken[actionIndex] != 0)
+                {
+                    actions.Add(InputUtils.IndexToInput(actionIndex));
+                }
+            }
+
+            return actions;
         }
 
         public void WriteObservationBuffer(IntPtr buffer, D3DFORMAT format)
@@ -127,6 +149,16 @@ namespace HighwayPursuitServer.Server
         public void WriteInfoBuffer(Info info)
         {
             WriteStructToSharedMemory(info, _infoSM);
+        }
+
+        public void WriteRewardBuffer(Reward reward)
+        {
+            WriteStructToSharedMemory(reward, _rewardSM);
+        }
+
+        public void WriteTerminationBuffer(Termination termination)
+        {
+            WriteStructToSharedMemory(termination, _terminationSM);
         }
 
         private MemoryMappedViewAccessor ConnectToSharedMemory(string name)

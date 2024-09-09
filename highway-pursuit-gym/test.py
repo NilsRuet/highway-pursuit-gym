@@ -18,7 +18,7 @@ def main():
 
     done = False
     step_count = 0
-    while not done and step_count < 10:
+    while not done and step_count < 1000:
         action = env.action_space.sample()
         observation, reward, terminated, truncated, info = env.step(action)
         done = truncated or terminated
@@ -27,7 +27,7 @@ def main():
     env.close()
 
     input("Waiting for key press..")
-    for image in images:
+    for image in images[::100]:
         plt.imshow(image)
         plt.axis('off')
         plt.show()

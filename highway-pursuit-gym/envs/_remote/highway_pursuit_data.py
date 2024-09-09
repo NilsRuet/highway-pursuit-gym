@@ -25,7 +25,7 @@ class Info(ctypes.Structure):
 
 class Reward(ctypes.Structure):
     _fields_ = (
-        ('reward', ctypes.c_uint),
+        ('reward', ctypes.c_float),
     )
 
 class Termination(ctypes.Structure):

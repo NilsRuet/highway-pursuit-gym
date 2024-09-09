@@ -48,6 +48,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Data\D3D8Types.cs" />
+    <Compile Include="Data\HighwayPursuitTypes.cs" />
     <Compile Include="Data\ServerOptions.cs" />
     <Compile Include="Data\RemoteDatatypes.cs" />
     <Compile Include="Injected\InputService.cs" />

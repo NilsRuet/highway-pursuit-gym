@@ -140,6 +140,10 @@ namespace HighwayPursuitServer.Server
             _updateService.UpdateTime();
             _lockUpdatePool.Release();
 
+            // Update step variables
+            _step = 0;
+            _lastRewardedStep = 0;
+
             // Wait for one frame for the new episode starting state
             _lockServerPool.WaitOne();
             // Transfer state/info
@@ -182,26 +186,21 @@ namespace HighwayPursuitServer.Server
             // Wait for and lock game update
             _lockServerPool.WaitOne();
 
-            // Receive action (or reset) from the gym env
-            // TODO
-
-            // Setup actions
-            // TODO: load actions using the comm manager
+            // Get action
             // TODO: actions are effectively delayed. This doesn't take effect during the current transition but during the next one.
-            _inputService.SetInput(new List<Input> { Input.Accelerate, Input.Fire });
+            List<Input> actions = _communicationManager.ReadActions();
+            _inputService.SetInput(actions);
 
             // Get game state
-            // _direct3D8Service.Screenshot();
+            _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
 
             // Get reward
             var reward = _scoreService.PullReward();
+            _communicationManager.WriteRewardBuffer(new Reward(reward));
             if (reward != 0)
             {
                 _lastRewardedStep = _step;
             }
-
-            // Answer with next state/reward
-            // TODO
 
             // Next step
             _updateService.UpdateTime();

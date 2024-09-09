@@ -14,7 +14,6 @@ namespace HighwayPursuitServer.Data
         public uint obsHeight;
         public uint obsChannels;
         public uint actionCount;
-
         public ServerInfo(uint obsWidth, uint obsHeight, uint obsChannels, uint actionCount)
         {
             this.obsWidth = obsWidth;
@@ -23,7 +22,6 @@ namespace HighwayPursuitServer.Data
             this.actionCount = actionCount;
         }
     }
-
     public enum InstructionCode : uint
     {
         RESET = 1,
@@ -35,7 +33,6 @@ namespace HighwayPursuitServer.Data
     public struct Instruction
     {
         public InstructionCode code;
-
         public Instruction(InstructionCode code)
         {
             this.code = code;
@@ -47,7 +44,6 @@ namespace HighwayPursuitServer.Data
     {
         public float tps;
         public float memory;
-
         public Info(float tps, float memory)
         {
             this.tps = tps;
@@ -58,10 +54,22 @@ namespace HighwayPursuitServer.Data
     [StructLayout(LayoutKind.Sequential)]
     public struct Reward
     {
-        public uint reward;
-        public Reward(uint reward)
+        public float reward;
+        public Reward(float reward)
         {
             this.reward = reward;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Termination
+    {
+        public byte terminated;
+        public byte truncated;
+        public Termination(byte terminated, byte truncated)
+        {
+            this.terminated = terminated;
+            this.truncated = truncated;
         }
     }
 }
