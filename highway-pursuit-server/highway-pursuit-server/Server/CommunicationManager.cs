@@ -67,7 +67,7 @@ namespace HighwayPursuitServer.Server
             _lockClientPool.Release();
         }
 
-        public void WaitForInstruction(Action<InstructionCode> instructionHandler)
+        public void ExecuteOnInstruction(Action<InstructionCode> instructionHandler)
         {
             // Wait for the client
             // TODO: this really looks like it need a success/fail mechanism to avoid querying a failing server

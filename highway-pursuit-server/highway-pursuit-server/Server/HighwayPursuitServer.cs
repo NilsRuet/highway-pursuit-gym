@@ -83,6 +83,19 @@ namespace HighwayPursuitServer.Server
             };
         }
 
+        private void WaitUpdateAndExecute(Action action)
+        {
+            _lockServerPool.WaitOne();
+            try
+            {
+                action();
+            }
+            finally
+            {
+                _lockUpdatePool.Release();
+            }
+        }
+
         private void ServerThread(CancellationTokenSource cts)
         {
             // Wait for update to be called at least once
@@ -90,19 +103,16 @@ namespace HighwayPursuitServer.Server
             startTick = Environment.TickCount;
             if (!cts.IsCancellationRequested)
             {
-                _lockServerPool.WaitOne();
-
-                // This is a safeguard, as reset SHOULD be called anyway before any episode
-                _episodeService.NewGame(); 
-                _updateService.UpdateTime();
-
-                _lockUpdatePool.Release();
+                WaitUpdateAndExecute(() =>
+                {
+                    _updateService.UpdateTime();
+                });
             }
 
             // Main loop
             while (!cts.IsCancellationRequested && !_terminated)
             {
-                _communicationManager.WaitForInstruction(HandleInstruction);
+                _communicationManager.ExecuteOnInstruction(HandleInstruction);
             }
         }
 
@@ -135,21 +145,23 @@ namespace HighwayPursuitServer.Server
         private void Reset()
         {
             // Reset the episode
-            _lockServerPool.WaitOne();
-            _episodeService.NewGame();
-            _updateService.UpdateTime();
-            _lockUpdatePool.Release();
+            WaitUpdateAndExecute(() =>
+            {
+                _episodeService.NewGame();
+                _updateService.UpdateTime();
+            });
 
             // Update step variables
             _step = 0;
             _lastRewardedStep = 0;
 
             // Wait for one frame for the new episode starting state
-            _lockServerPool.WaitOne();
-            // Transfer state/info
-            _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
-            _communicationManager.WriteInfoBuffer(new Info(1.0f, 2.0f));
-            _lockServerPool.Release();
+            WaitUpdateAndExecute(() =>
+            {
+                // Transfer state/info
+                _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
+                _communicationManager.WriteInfoBuffer(new Info(1.0f, 2.0f));
+            });
         }
 
         // Fast game update
@@ -183,34 +195,32 @@ namespace HighwayPursuitServer.Server
         // Frame code
         private void Step()
         {
-            // Wait for and lock game update
-            _lockServerPool.WaitOne();
-
-            // Get action
-            // TODO: actions are effectively delayed. This doesn't take effect during the current transition but during the next one.
-            List<Input> actions = _communicationManager.ReadActions();
-            _inputService.SetInput(actions);
-
-            // Get game state
-            _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
-
-            // Get reward
-            var reward = _scoreService.PullReward();
-            _communicationManager.WriteRewardBuffer(new Reward(reward));
-            if (reward != 0)
+            WaitUpdateAndExecute(
+            () =>
             {
-                _lastRewardedStep = _step;
-            }
+                // Get action
+                // TODO: actions are effectively delayed. This doesn't take effect during the current transition but during the next one.
+                List<Input> actions = _communicationManager.ReadActions();
+                _inputService.SetInput(actions);
 
-            // Next step
-            _updateService.UpdateTime();
-            _step++;
+                // Get game state
+                _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
 
-            HandleSoftlock();
-            HandleMetrics(); // TODO: this probably belongs to the main loop and not just step?
+                // Get reward
+                var reward = _scoreService.PullReward();
+                _communicationManager.WriteRewardBuffer(new Reward(reward));
+                if (reward != 0)
+                {
+                    _lastRewardedStep = _step;
+                }
 
-            // Release game update
-            _lockUpdatePool.Release();
+                // Next step
+                _updateService.UpdateTime();
+                _step++;
+
+                HandleSoftlock();
+                HandleMetrics();
+            });
         }
 
         // Safeguard against "softlock" states that may happens
@@ -236,7 +246,7 @@ namespace HighwayPursuitServer.Server
                 double memorySize = 0;
                 using (Process proc = Process.GetCurrentProcess())
                 {
-                    memorySize = proc.PrivateMemorySize64 / (1024.0*1024.0);
+                    memorySize = proc.PrivateMemorySize64 / (1024.0 * 1024.0);
                 }
 
                 _hookManager.Log($"step {_step} -> {tps:0} ticks/s = x{ratio:0.#} | RAM:{memorySize:0.##}Mb");
