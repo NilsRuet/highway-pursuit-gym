@@ -15,6 +15,7 @@ namespace HighwayPursuitServer
     {
         public InjectionEntryPoint(EasyHook.RemoteHooking.IContext context, ServerOptions options)
         {
+            Logger.SetLogDir(options.logDirectory);
         }
 
         public void Run(EasyHook.RemoteHooking.IContext context, ServerOptions options)

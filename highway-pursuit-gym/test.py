@@ -2,6 +2,7 @@ import numpy as np
 from envs import HighwayPursuitEnv
 import matplotlib.pyplot as plt
 import time
+import os
 
 def main():
     launcher_path = "..\\highway-pursuit-server\\highway-pursuit-launcher\\bin\\Debug\\HighwayPursuitLauncher.exe"
@@ -11,7 +12,8 @@ def main():
     max_images = 50
     images = []
 
-    env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False)
+    log_dir = os.path.join(os.getcwd(), "logs") 
+    env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False, log_dir=log_dir)
 
     episode_limit = 2000
     episode_count = 10
@@ -31,7 +33,9 @@ def main():
             observation, reward, terminated, truncated, info = env.step(action)
             done = truncated or terminated
 
-            images.append(observation)
+            if(len(images) < max_images):
+                images.append(observation)
+
             step_count += 1
 
         print(f"{step_count / (time.time() - t0)} steps/s")

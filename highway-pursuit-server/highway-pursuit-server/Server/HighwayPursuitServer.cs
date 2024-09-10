@@ -18,7 +18,7 @@ namespace HighwayPursuitServer.Server
         const long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
         const int GAME_TIMEOUT = 2000; // results in an error if the game fails to update
         const int NO_REWARD_TIMEOUT = 60 * 45; // No rewards for 45 seconds result in a reset (softlock safeguard)
-        const int LOG_PERIOD = 5 * 60 * 60; // update metrics every 5 minutes of gameplay
+        const int LOG_PERIOD = 60 * 60; // update metrics every minute of gameplay
         // Instance members
         public readonly Task serverTask;
         private readonly ServerOptions _options; // Game options
@@ -37,6 +37,7 @@ namespace HighwayPursuitServer.Server
         private bool _firstEpisode = true;
         private bool _terminated = false;
         private long _step; // current step
+        private long _totalSteps;
         private long _lastRewardedStep; // last step where reward wasn't zero
         private long startTick; // used to measure performance
 
@@ -258,6 +259,7 @@ namespace HighwayPursuitServer.Server
             // Next step
             _updateService.UpdateTime();
             _step++;
+            _totalSteps++;
 
             HandleSoftlock();
             HandleLogs();
@@ -277,7 +279,7 @@ namespace HighwayPursuitServer.Server
         private void HandleLogs()
         {
             // Performance metrics
-            if (_step % LOG_PERIOD == 0)
+            if (_totalSteps % LOG_PERIOD == 0)
             {
                 long elapsedTicks = Environment.TickCount - startTick;
                 var tps = ((float)LOG_PERIOD) / (elapsedTicks / 1000.0);
@@ -289,7 +291,7 @@ namespace HighwayPursuitServer.Server
                     memorySize = proc.PrivateMemorySize64 / (1024.0 * 1024.0);
                 }
 
-                Logger.Log($"step {_step} -> {tps:0} ticks/s = x{ratio:0.#} | RAM:{memorySize:0.##}Mb", Logger.Level.Debug);
+                Logger.Log($"step {_totalSteps} -> {tps:0} ticks/s = x{ratio:0.#} | RAM:{memorySize:0.##}Mb", Logger.Level.Debug);
                 startTick = Environment.TickCount;
             }
         }

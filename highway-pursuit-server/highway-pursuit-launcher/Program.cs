@@ -15,8 +15,9 @@ namespace HighwayPursuitLauncher
         const int ARG_EXE = 0;
         const int ARG_DLL = 1;
         const int ARG_REAL_TIME = 2;
-        const int ARG_SHARED_RESOURCES_PREFIX = 3;
-        const int TOTAL_ARGS = 4;
+        const int ARG_LOG_DIR_PATH = 3;
+        const int ARG_SHARED_RESOURCES_PREFIX = 4;
+        const int TOTAL_ARGS = 5;
 
         const int SERVER_ARGS_OFFSET = 2;
 
@@ -44,6 +45,7 @@ namespace HighwayPursuitLauncher
 
                 var options = new ServerOptions(
                     isRealTime,
+                    args[ARG_LOG_DIR_PATH],
                     args[ARG_SHARED_RESOURCES_PREFIX]
                 );
 

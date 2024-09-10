@@ -42,10 +42,16 @@ class ErrorCode(Enum):
 class HighwayPursuitClient:
     SERVER_TIMEOUT = 10000 # timeout in ms
 
-    def __init__(self, launcher_path, highway_pursuit_path, dll_path, is_real_time = False):
+    def __init__(self, launcher_path, highway_pursuit_path, dll_path, is_real_time = False, log_dir = None):
         self.launcher_path = os.path.abspath(launcher_path)
         self.highway_pursuit_path = os.path.abspath(highway_pursuit_path)
         self.dll_path = os.path.abspath(dll_path)
+
+        if log_dir == None:
+            self.log_dir = os.path.join(os.path.abspath(os.path.dirname(dll_path)), 'logs')
+        else:
+            self.log_dir = log_dir
+
         self.is_real_time = is_real_time
         self.shared_memory_handles = []
 
@@ -68,6 +74,7 @@ class HighwayPursuitClient:
             self.highway_pursuit_path,
             self.dll_path,
             str(self.is_real_time),
+            self.log_dir,
             self._app_resources_id
         ]
 
@@ -192,7 +199,7 @@ class HighwayPursuitClient:
         has_server_timed_out = (wait_result != 0)
         error_code = self._get_error()
         if(has_server_timed_out or error_code != ErrorCode.ACK.value):
-            message = f"Server error: {ErrorCode(error_code).name}{' (+ timeout)' if has_server_timed_out else ''}"
+            message = f"Server error: {'TIMEOUT | ' if has_server_timed_out else ''}{ErrorCode(error_code).name}"
             raise Exception(message)
 
     def _get_error(self):
