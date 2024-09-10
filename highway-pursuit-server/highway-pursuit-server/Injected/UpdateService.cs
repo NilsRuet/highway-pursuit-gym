@@ -20,6 +20,7 @@ namespace HighwayPursuitServer.Injected
         private readonly Semaphore _lockServerPool;
         private readonly Semaphore _lockUpdatePool;
         private readonly bool _isRealTime; // Disable/enable performance counter hooks
+        private bool _useSemaphores = true; // This is to ensure the hook is not blocking when disabling it
 
         public UpdateService(IHookManager hookManager, bool isRealTime, Semaphore lockServerPool, Semaphore lockUpdatePool, float FPS, long performanceCounterFrequency)
         {
@@ -40,6 +41,11 @@ namespace HighwayPursuitServer.Injected
             {
                 _performanceCount += _counterTicksPerFrame;
             }
+        }
+
+        public void DisableSemaphores()
+        {
+            _useSemaphores = false;
         }
 
         #region Hooking
@@ -93,9 +99,15 @@ namespace HighwayPursuitServer.Injected
 
         void Update_Hook()
         {
-            _lockUpdatePool.WaitOne();
+            if (_useSemaphores)
+            {
+                _lockUpdatePool.WaitOne();
+            }
             Update();
-            _lockServerPool.Release();
+            if (_useSemaphores)
+            {
+                _lockServerPool.Release();
+            }
         }
         #endregion
 

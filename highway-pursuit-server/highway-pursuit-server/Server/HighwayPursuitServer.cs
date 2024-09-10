@@ -172,6 +172,9 @@ namespace HighwayPursuitServer.Server
                 case InstructionCode.CLOSE:
                     // Notify end of loop
                     _terminated = true;
+                    // ensure the updates hooks are non-blocking
+                    _updateService.DisableSemaphores();
+                    _lockUpdatePool.Release();
                     break;
                 default:
                     break;

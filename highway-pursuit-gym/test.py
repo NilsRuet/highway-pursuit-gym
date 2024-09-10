@@ -15,8 +15,8 @@ def main():
     log_dir = os.path.join(os.getcwd(), "logs") 
     env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False, log_dir=log_dir)
 
-    episode_limit = 2000
-    episode_count = 10
+    episode_limit = 1000
+    episode_count = 2
     for _ in range(episode_count):
         t0 = time.time()
         observation, info = env.reset()
