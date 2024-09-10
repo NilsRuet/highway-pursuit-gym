@@ -33,10 +33,12 @@ namespace HighwayPursuitServer.Server
         private readonly Semaphore _lockUpdatePool; // Update thread waits for this
         private readonly Semaphore _lockServerPool; // Server thread waits for this
 
+        private bool _firstEpisode = true;
         private bool _terminated = false;
         private long _step; // current step
         private long _lastRewardedStep; // last step where reward wasn't zero
         private long startTick; // used to measure performance
+
 
         public HighwayPursuitServer(CommunicationManager communicationManager, ServerOptions options)
         {
@@ -92,12 +94,12 @@ namespace HighwayPursuitServer.Server
 
         private void ServerThread(CancellationTokenSource cts)
         {
-            // Wait for update to be called at least once
-            // This ensures the game is initialized
             startTick = Environment.TickCount;
             if (!cts.IsCancellationRequested)
             {
+                // wait for game to be initialized
                 WaitGameUpdate();
+                SkipIntro();
             }
 
             // Main loop
@@ -105,6 +107,16 @@ namespace HighwayPursuitServer.Server
             {
                 _communicationManager.ExecuteOnInstruction(HandleInstruction);
             }
+        }
+
+        private void SkipIntro()
+        {
+            // Calling new game skips the intro
+            // We then skip the initial zoom out, and wait 2 frames for the fade out the complete
+            _episodeService.NewGame();
+            _direct3D8Service.ResetZoomLevel();
+            WaitGameUpdate();
+            WaitGameUpdate();
         }
 
         private void HandleInstruction(InstructionCode code)
@@ -136,8 +148,16 @@ namespace HighwayPursuitServer.Server
         private void Reset()
         {
             // Reset the episode
-            _episodeService.NewGame();
-            _direct3D8Service.ResetZoomLevel();
+            if (_firstEpisode)
+            {
+                // New game is called on the first episode because it fully resets the game state
+                _episodeService.NewGame();
+                _firstEpisode = false;
+            }
+            else
+            {
+                _episodeService.NewLife();
+            }
 
             // Wait for one frame for the rendering buffer to update
             WaitGameUpdate();

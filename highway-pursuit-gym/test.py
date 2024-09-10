@@ -11,12 +11,11 @@ def main():
     images = []
     env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False)
 
-    episode_limit = 20
-    episode_count = 10
+    episode_limit = 2000
+    episode_count = 1
     for i in range(episode_count):
         t0 = time.time()
         observation, info = env.reset()
-        print(observation.shape)
         print(f"tps: {info.tps}, memory: {info.memory}")
 
         images.append(observation)
@@ -28,8 +27,10 @@ def main():
             action = env.action_space.sample()
             observation, reward, terminated, truncated, info = env.step(action)
             done = truncated or terminated
+
             images.append(observation)
-            step_count+=1
+            step_count += 1
+
         print(f"{step_count / (time.time() - t0)} steps/s")
 
     env.close()
