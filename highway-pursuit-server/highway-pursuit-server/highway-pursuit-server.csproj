@@ -51,6 +51,7 @@
     <Compile Include="Data\HighwayPursuitTypes.cs" />
     <Compile Include="Data\ServerOptions.cs" />
     <Compile Include="Data\RemoteDatatypes.cs" />
+    <Compile Include="Exceptions\HighwayPursuitException.cs" />
     <Compile Include="Injected\InputService.cs" />
     <Compile Include="Injected\CheatService.cs" />
     <Compile Include="Injected\D3D8Service.cs" />

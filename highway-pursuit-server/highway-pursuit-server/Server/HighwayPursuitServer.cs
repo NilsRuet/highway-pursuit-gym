@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 using HighwayPursuitServer.Data;
+using HighwayPursuitServer.Exceptions;
 using HighwayPursuitServer.Injected;
 
 namespace HighwayPursuitServer.Server
@@ -15,9 +16,9 @@ namespace HighwayPursuitServer.Server
         private readonly float TICKS_PER_FRAME = Stopwatch.Frequency / FPS;
         private readonly float TICKS_PER_MS = Stopwatch.Frequency / 1000.0f;
         const long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
+        const int GAME_TIMEOUT = 2000; // results in an error if the game fails to update
         const int NO_REWARD_TIMEOUT = 60 * 45; // No rewards for 45 seconds result in a reset (softlock safeguard)
         const int REPORT_PERIOD = 5 * 60 * 60; // update metrics every 5 minutes of gameplay
-
         // Instance members
         public readonly Task serverTask;
         private readonly ServerOptions _options; // Game options
@@ -45,8 +46,10 @@ namespace HighwayPursuitServer.Server
             _communicationManager = communicationManager;
             _options = options;
 
-            // Init the update semaphore
-            // Allow one game update, zero server update as the initial state
+            //Setup the communication
+            _communicationManager.Connect();
+
+            // Setup interactions with the game
             _lockUpdatePool = new Semaphore(initialCount: 0, maximumCount: 1);
             _lockServerPool = new Semaphore(initialCount: 0, maximumCount: 1);
 
@@ -61,9 +64,6 @@ namespace HighwayPursuitServer.Server
 
             // Activate hooks on all threads except the current thread
             _hookManager.EnableHooks();
-
-            //Setup the communication
-            _communicationManager.Connect();
 
             // Create the server thread
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -89,23 +89,55 @@ namespace HighwayPursuitServer.Server
         {
             _updateService.UpdateTime();
             _lockUpdatePool.Release();
-            _lockServerPool.WaitOne();
+            bool acquired = _lockServerPool.WaitOne(GAME_TIMEOUT);
+            if (!acquired)
+            {
+                throw new HighwayPursuitException(ErrorCode.GAME_TIMEOUT);
+            }
         }
 
         private void ServerThread(CancellationTokenSource cts)
         {
-            startTick = Environment.TickCount;
-            if (!cts.IsCancellationRequested)
+            try
             {
-                // wait for game to be initialized
-                WaitGameUpdate();
-                SkipIntro();
-            }
+                startTick = Environment.TickCount;
+                if (!cts.IsCancellationRequested)
+                {
+                    // wait for game to be initialized
+                    WaitGameUpdate();
+                    SkipIntro();
+                }
 
-            // Main loop
-            while (!cts.IsCancellationRequested && !_terminated)
+                // Main loop
+                while (!cts.IsCancellationRequested && !_terminated)
+                {
+                    _communicationManager.ExecuteOnInstruction(HandleInstruction);
+                }
+            }
+            // Serve thread top-level exception handling
+            catch (HighwayPursuitException e)
             {
-                _communicationManager.ExecuteOnInstruction(HandleInstruction);
+                try
+                {
+                    // TODO: maybe log the exception
+                    _communicationManager.WriteException(e);
+                }
+                finally
+                {
+                    cts.Cancel();
+                }
+            }
+            catch (Exception e)
+            {
+                try
+                {
+                    // TODO: maybe log the exception
+                    _communicationManager.WriteException(new HighwayPursuitException(ErrorCode.NATIVE_ERROR));
+                }
+                finally
+                {
+                    cts.Cancel();
+                }
             }
         }
 

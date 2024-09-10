@@ -1,4 +1,5 @@
 ﻿using HighwayPursuitServer.Data;
+using HighwayPursuitServer.Exceptions;
 using HighwayPursuitServer.Injected;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,8 @@ namespace HighwayPursuitServer.Server
 {
     class CommunicationManager
     {
+        const int CLIENT_TIMEOUT = 2000; // TIMEOUT in ms
+
         private readonly ServerOptions _args;
 
         private Semaphore _lockServerPool;
@@ -41,46 +44,61 @@ namespace HighwayPursuitServer.Server
             _lockServerPool = Semaphore.OpenExisting(_args.serverMutexName);
             _lockClientPool = Semaphore.OpenExisting(_args.clientMutexName);
 
-            // Wait for the client to be ready
-            _lockServerPool.WaitOne();
+            // Wait for the client to be ready and send the server info via the shared memory
+            SyncOnClientQuery(() => {
+                _serverInfoSM = ConnectToSharedMemory(_args.serverInfoMemoryName);
+                var serverInfo = new ServerInfo(480, 640, 4, 8); // TODO: get the actual values
+                WriteStructToSharedMemory(serverInfo, _serverInfoSM);
+            });
 
-            // Open the server info memory map
-            _serverInfoSM = ConnectToSharedMemory(_args.serverInfoMemoryName);
-
-            var serverInfo = new ServerInfo(480, 640, 4, 8); // TODO: get the actual values
-            WriteStructToSharedMemory(serverInfo, _serverInfoSM);
-
-            _lockClientPool.Release();
-
-            // Now the client should have allocated all shared memory sections
-            // Crate the accessors
-            _lockServerPool.WaitOne();
-
-            _instructionSM = ConnectToSharedMemory(_args.instructionMemoryName);
-            _observationSM = ConnectToSharedMemory(_args.observationMemoryName);
-            _infoSM = ConnectToSharedMemory(_args.infoMemoryName);
-            _rewardSM = ConnectToSharedMemory(_args.rewardMemoryName);
-            _actionSM = ConnectToSharedMemory(_args.actionMemoryName);
-            _terminationSM = ConnectToSharedMemory(_args.terminationMemoryName);
-
-            // Give control back to the client
-            _lockClientPool.Release();
+            // Create the remaining memory accessors
+            SyncOnClientQuery(() => {
+                _instructionSM = ConnectToSharedMemory(_args.instructionMemoryName);
+                _observationSM = ConnectToSharedMemory(_args.observationMemoryName);
+                _infoSM = ConnectToSharedMemory(_args.infoMemoryName);
+                _rewardSM = ConnectToSharedMemory(_args.rewardMemoryName);
+                _actionSM = ConnectToSharedMemory(_args.actionMemoryName);
+                _terminationSM = ConnectToSharedMemory(_args.terminationMemoryName);
+            });
         }
 
         public void ExecuteOnInstruction(Action<InstructionCode> instructionHandler)
         {
-            // Wait for the client
-            // TODO: this really looks like it need a success/fail mechanism to avoid querying a failing server
-            _lockServerPool.WaitOne();
-            try
+            SyncOnClientQuery(() =>
             {
                 Instruction instruction = ReadStructFromSharedMemory<Instruction>(_instructionSM);
                 instructionHandler(instruction.code);
-            }
-            finally
+            });
+        }
+
+        private void SyncOnClientQuery(Action action)
+        {
+            bool acquired = _lockServerPool.WaitOne(CLIENT_TIMEOUT);
+            if (acquired)
             {
-                // Answer to the client
-                _lockClientPool.Release();
+                try
+                {
+                    action();
+                }
+                // We need to write the exception before releasing so the client doesn't use invaldi data
+                catch(HighwayPursuitException e)
+                {
+                    WriteException(e);
+                    throw e;
+                }
+                catch (Exception e)
+                {
+                    WriteException(new HighwayPursuitException(ErrorCode.NATIVE_ERROR));
+                    throw e;
+                }
+                finally
+                {
+                    // Answer to the client
+                    _lockClientPool.Release();
+                }
+            } else
+            {
+                throw new HighwayPursuitException(ErrorCode.CLIENT_TIMEOUT);
             }
         }
 
@@ -118,8 +136,7 @@ namespace HighwayPursuitServer.Server
                         CopyMemory(memoryPtr, buffer, channels * pixelCount);
                         break;
                     default:
-                        // TODO: handle error
-                        break;
+                        throw new HighwayPursuitException(ErrorCode.UNSUPPORTED_BACKBUFFER_FORMAT);
                 }
             }
             finally
@@ -155,6 +172,11 @@ namespace HighwayPursuitServer.Server
             _disposableResources.Add(accessor);
 
             return accessor;
+        }
+
+        public void WriteException(HighwayPursuitException exception)
+        {
+            // TODO: write some error code for the client
         }
 
         public void Dispose()

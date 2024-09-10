@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HighwayPursuitServer.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -40,8 +41,8 @@ namespace HighwayPursuitServer.Data
                     return Input.Smoke;
                 case 7:
                     return Input.Missiles;
-                default: // TODO this should be an exception
-                    return Input.Accelerate;
+                default:
+                    throw new HighwayPursuitException(ErrorCode.UNKNOWN_ACTION);
             }
         }
     }

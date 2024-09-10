@@ -1,0 +1,27 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace HighwayPursuitServer.Exceptions
+{
+    public enum ErrorCode : byte
+    {
+        OK = 0,
+        NATIVE_ERROR = 1,
+        CLIENT_TIMEOUT = 2,
+        GAME_TIMEOUT = 3,
+        UNSUPPORTED_BACKBUFFER_FORMAT = 4,
+        UNKNOWN_ACTION = 5,
+        INIT = 0xFF
+    }
+
+    class HighwayPursuitException : Exception
+    {
+        public HighwayPursuitException(ErrorCode code) : base($"Highway pursuit server error : 0x{(int)code:x}")
+        {
+            
+        }
+    }
+}

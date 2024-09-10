@@ -6,6 +6,7 @@ import subprocess
 from multiprocessing import shared_memory
 from envs._remote.highway_pursuit_data import *
 from envs._remote.shared_names import *
+from enum import Enum
 
 kernel32 = ctypes.windll.kernel32
 
@@ -29,7 +30,18 @@ class Semaphore():
     def close(self):
         return kernel32.CloseHandle(self._semaphore)
 
+class ErrorCode(Enum):
+    OK = 0
+    NATIVE_ERROR = 1
+    CLIENT_TIMEOUT = 2
+    GAME_TIMEOUT = 3
+    UNSUPPORTED_BACKBUFFER_FORMAT = 4
+    UNKNOWN_ACTION = 5
+    INIT = 0xFF
+
 class HighwayPursuitClient:
+    SERVER_TIMEOUT = 10000 # timeout in ms
+
     def __init__(self, launcher_path, highway_pursuit_path, dll_path, is_real_time = False):
         self.launcher_path = os.path.abspath(launcher_path)
         self.highway_pursuit_path = os.path.abspath(highway_pursuit_path)
@@ -37,18 +49,7 @@ class HighwayPursuitClient:
         self.is_real_time = is_real_time
 
     def create_process_and_connect(self):
-        """
-        Create the highway pursuit server process and connects to it.
-        
-        Parameters:
-        realTime (bool): if highway pursuit should run in real time (60fps), or in fast forward mode
-        
-        Returns:
-        tuple: observation shape
-        int: action count
-        """
         # Generate name for mutex and share memory sections
-
         self._app_resources_id = f"{str(uuid.uuid1())}-"
         # Setup the server and the data formats
         self.setup_server()
@@ -96,8 +97,7 @@ class HighwayPursuitClient:
         self._start_process()
 
         # Notify server that server info is ready to be retrieved, and wait for the operation to complete
-        self._lock_server_pool.release()
-        self._lock_client_pool.acquire()
+        self._sync_wait_for_serv()
 
         # Retrieve the server info
         server_info: ServerInfo = ServerInfo.from_buffer_copy(self._server_info_sm.buf)
@@ -115,11 +115,8 @@ class HighwayPursuitClient:
         self._observation_sm = shared_memory.SharedMemory(name=observation_memory_name, size=observation_buffer_size, create=True)
         self._action_sm = shared_memory.SharedMemory(name=action_memory_name, size=action_buffer_size, create=True)
 
-        # Release the server, it will connect to the shared memory sections
-        self._lock_server_pool.release()
-
-        # Lock the client mutex to ensure the server is in wait mode
-        self._lock_client_pool.acquire()
+        # Server will now connect to the shared memory
+        self._sync_wait_for_serv()
 
     def reset(self):
         # Query
@@ -187,4 +184,14 @@ class HighwayPursuitClient:
 
     def _sync_wait_for_serv(self):
         self._lock_server_pool.release()
-        self._lock_client_pool.acquire()
+        wait_result = self._lock_client_pool.acquire(HighwayPursuitClient.SERVER_TIMEOUT)
+        
+        has_server_timed_out = (wait_result != 0)
+        error_code = self._check_error()
+        if(has_server_timed_out or error_code != ErrorCode.OK.value):
+            message = f"Server error: {ErrorCode(error_code).name}{' (+ timeout)' if has_server_timed_out else ''}"
+            raise Exception(message)
+
+    def _check_error(self):
+        #TODO
+        return ErrorCode.OK.value

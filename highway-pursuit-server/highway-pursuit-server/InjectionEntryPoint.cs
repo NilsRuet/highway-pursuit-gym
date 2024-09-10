@@ -20,12 +20,18 @@ namespace HighwayPursuitServer
 
         public void Run(EasyHook.RemoteHooking.IContext context, ServerOptions options)
         {
-            var comManager = new CommunicationManager(options);
-            var server = new Server.HighwayPursuitServer(comManager, options);
-            EasyHook.RemoteHooking.WakeUpProcess();
-
-            // Wait for the server, hooks are disabled if the main thread ends
-            server.serverTask.Wait();
+            try
+            {
+                var comManager = new CommunicationManager(options);
+                var server = new Server.HighwayPursuitServer(comManager, options);
+                EasyHook.RemoteHooking.WakeUpProcess();
+                // Wait for the server, hooks are disabled if the main thread ends
+                server.serverTask.Wait();
+            } catch(Exception e)
+            {
+                // Some exception happended on instanciation
+                // TODO: log it
+            }
         }
     }
 }

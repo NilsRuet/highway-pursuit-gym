@@ -12,7 +12,7 @@ def main():
     env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False)
 
     episode_limit = 2000
-    episode_count = 1
+    episode_count = 10
     for i in range(episode_count):
         t0 = time.time()
         observation, info = env.reset()
