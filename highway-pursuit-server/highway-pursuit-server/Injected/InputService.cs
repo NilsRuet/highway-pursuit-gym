@@ -86,7 +86,6 @@ namespace HighwayPursuitServer.Injected
                 modifiedState[keycode] = ACTIVE_KEY;
             }
 
-            // TODO: edit keyboard state based on actions!
             Marshal.Copy(modifiedState, 0, pDeviceStateArray, (int)deviceSize);
             return res;
         }

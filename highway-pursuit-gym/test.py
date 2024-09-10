@@ -8,17 +8,20 @@ def main():
     dll_path = "..\\highway-pursuit-server\\highway-pursuit-server\\bin\\Debug\\HighwayPursuitServer.dll"
     app_path = "C:\\Program Files (x86)\\HighwayPursuit\\HighwayPursuit.exe"
 
+    max_images = 50
     images = []
+
     env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False)
 
-    episode_limit = 200
-    episode_count = 1
-    for i in range(episode_count):
+    episode_limit = 2000
+    episode_count = 10
+    for _ in range(episode_count):
         t0 = time.time()
         observation, info = env.reset()
         print(f"tps: {info.tps}, memory: {info.memory}")
 
-        images.append(observation)
+        if(len(images) < max_images):
+            images.append(observation)
 
         done = False
         step_count = 0
@@ -34,8 +37,8 @@ def main():
         print(f"{step_count / (time.time() - t0)} steps/s")
 
     env.close()
-    input("Waiting for key press...")
 
+    input("Waiting for key press...")
     for image in images:
         plt.imshow(image)
         plt.show()

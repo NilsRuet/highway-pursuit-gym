@@ -16,14 +16,9 @@ namespace HighwayPursuitServer.Server
         private readonly IntPtr _d3d8Base;
         private readonly IntPtr _dinputBase;
         private readonly List<LocalHook> _hooks = new List<LocalHook>();
-        private readonly Action<string> _report;
 
-        public Action<string> Log => _report;
-
-        public HookManager(Action<string> report)
+        public HookManager()
         {
-            _report = report;
-
             using (Process proc = Process.GetCurrentProcess())
             {
                 // Modules for custom functions

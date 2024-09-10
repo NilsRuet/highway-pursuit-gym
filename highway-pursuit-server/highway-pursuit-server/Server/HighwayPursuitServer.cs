@@ -18,7 +18,7 @@ namespace HighwayPursuitServer.Server
         const long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
         const int GAME_TIMEOUT = 2000; // results in an error if the game fails to update
         const int NO_REWARD_TIMEOUT = 60 * 45; // No rewards for 45 seconds result in a reset (softlock safeguard)
-        const int REPORT_PERIOD = 5 * 60 * 60; // update metrics every 5 minutes of gameplay
+        const int LOG_PERIOD = 5 * 60 * 60; // update metrics every 5 minutes of gameplay
         // Instance members
         public readonly Task serverTask;
         private readonly ServerOptions _options; // Game options
@@ -54,7 +54,7 @@ namespace HighwayPursuitServer.Server
             _lockServerPool = new Semaphore(initialCount: 0, maximumCount: 1);
 
             // Init services & hooks
-            _hookManager = new HookManager(communicationManager.Log);
+            _hookManager = new HookManager();
             _episodeService = new EpisodeService(_hookManager);
             _updateService = new UpdateService(_hookManager, _options.isRealTime, _lockServerPool, _lockUpdatePool, FPS, PERFORMANCE_COUNTER_FREQUENCY);
             _inputService = new InputService(_hookManager);
@@ -119,8 +119,8 @@ namespace HighwayPursuitServer.Server
             {
                 try
                 {
-                    // TODO: maybe log the exception
                     _communicationManager.WriteException(e);
+                    Logger.LogException(e);
                 }
                 finally
                 {
@@ -131,8 +131,8 @@ namespace HighwayPursuitServer.Server
             {
                 try
                 {
-                    // TODO: maybe log the exception
                     _communicationManager.WriteException(new HighwayPursuitException(ErrorCode.NATIVE_ERROR));
+                    Logger.LogException(e);
                 }
                 finally
                 {
@@ -227,6 +227,9 @@ namespace HighwayPursuitServer.Server
                 {
                     Thread.SpinWait(1);
                 }
+            } else
+            {
+                Logger.Log("Game update took longer than one frame.", Logger.Level.Warning);
             }
             stopwatch.Stop();
         }
@@ -257,7 +260,7 @@ namespace HighwayPursuitServer.Server
             _step++;
 
             HandleSoftlock();
-            HandleMetrics();
+            HandleLogs();
         }
 
         // Safeguard against "softlock" states that may happens
@@ -271,13 +274,13 @@ namespace HighwayPursuitServer.Server
         }
 
         // Tracks some useful metrics for debugging
-        private void HandleMetrics()
+        private void HandleLogs()
         {
             // Performance metrics
-            if (_step % REPORT_PERIOD == 0)
+            if (_step % LOG_PERIOD == 0)
             {
                 long elapsedTicks = Environment.TickCount - startTick;
-                var tps = ((float)REPORT_PERIOD) / (elapsedTicks / 1000.0);
+                var tps = ((float)LOG_PERIOD) / (elapsedTicks / 1000.0);
                 var ratio = tps / 60.0;
 
                 double memorySize = 0;
@@ -286,7 +289,7 @@ namespace HighwayPursuitServer.Server
                     memorySize = proc.PrivateMemorySize64 / (1024.0 * 1024.0);
                 }
 
-                _hookManager.Log($"step {_step} -> {tps:0} ticks/s = x{ratio:0.#} | RAM:{memorySize:0.##}Mb");
+                Logger.Log($"step {_step} -> {tps:0} ticks/s = x{ratio:0.#} | RAM:{memorySize:0.##}Mb", Logger.Level.Debug);
                 startTick = Environment.TickCount;
             }
         }

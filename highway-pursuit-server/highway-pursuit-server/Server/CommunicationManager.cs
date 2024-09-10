@@ -198,11 +198,6 @@ namespace HighwayPursuitServer.Server
             }
         }
 
-        public void Log(string _)
-        {
-            // TODO
-        }
-
         private static void WriteStructToSharedMemory<T>(T data, MemoryMappedViewAccessor accessor) where T : struct
         {
             byte[] buffer = StructToBytes(data);

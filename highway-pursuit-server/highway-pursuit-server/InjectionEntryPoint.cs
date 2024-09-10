@@ -15,7 +15,6 @@ namespace HighwayPursuitServer
     {
         public InjectionEntryPoint(EasyHook.RemoteHooking.IContext context, ServerOptions options)
         {
-            // TODO: a logging system!
         }
 
         public void Run(EasyHook.RemoteHooking.IContext context, ServerOptions options)
@@ -36,8 +35,7 @@ namespace HighwayPursuitServer
                 {
                     // This has to be called in all cases otherwise the process might stay alive indefinitely
                     EasyHook.RemoteHooking.WakeUpProcess();
-                    // Some exception happened on instanciation
-                    // TODO: log it
+                    Logger.LogException(e);
                 }
             }
         }

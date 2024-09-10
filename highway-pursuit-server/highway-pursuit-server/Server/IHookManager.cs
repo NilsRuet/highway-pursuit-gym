@@ -9,7 +9,6 @@ namespace HighwayPursuitServer.Server
 {
     interface IHookManager
     {
-        Action<string> Log { get; }
         IntPtr GetModuleBase();
         IntPtr GetD3D8Base();
         IntPtr GetDINPUTBase();
