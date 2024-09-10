@@ -23,6 +23,7 @@ namespace HighwayPursuitServer.Server
         private Semaphore _lockServerPool;
         private Semaphore _lockClientPool;
 
+        private MemoryMappedViewAccessor _returnCodeSM;
         private MemoryMappedViewAccessor _serverInfoSM;
         private MemoryMappedViewAccessor _instructionSM;
         private MemoryMappedViewAccessor _observationSM;
@@ -46,7 +47,10 @@ namespace HighwayPursuitServer.Server
 
             // Wait for the client to be ready and send the server info via the shared memory
             SyncOnClientQuery(() => {
+                _returnCodeSM = ConnectToSharedMemory(_args.returnCodeMemoryName);
                 _serverInfoSM = ConnectToSharedMemory(_args.serverInfoMemoryName);
+
+                WriteOk();
                 var serverInfo = new ServerInfo(480, 640, 4, 8); // TODO: get the actual values
                 WriteStructToSharedMemory(serverInfo, _serverInfoSM);
             });
@@ -174,9 +178,16 @@ namespace HighwayPursuitServer.Server
             return accessor;
         }
 
+        public void WriteOk()
+        {
+            // The return code is set to ACK once when the client connects to the server
+            // As a way to inform the client that the server is initialized properly
+            WriteStructToSharedMemory(new ReturnCode(ErrorCode.ACKNOWLEDGED), _returnCodeSM);
+        }
+
         public void WriteException(HighwayPursuitException exception)
         {
-            // TODO: write some error code for the client
+            WriteStructToSharedMemory(new ReturnCode(exception.code), _returnCodeSM);
         }
 
         public void Dispose()

@@ -31,13 +31,13 @@ class Semaphore():
         return kernel32.CloseHandle(self._semaphore)
 
 class ErrorCode(Enum):
-    OK = 0
+    NOT_ACK = -1
+    ACK = 0
     NATIVE_ERROR = 1
     CLIENT_TIMEOUT = 2
     GAME_TIMEOUT = 3
     UNSUPPORTED_BACKBUFFER_FORMAT = 4
     UNKNOWN_ACTION = 5
-    INIT = 0xFF
 
 class HighwayPursuitClient:
     SERVER_TIMEOUT = 10000 # timeout in ms
@@ -47,6 +47,12 @@ class HighwayPursuitClient:
         self.highway_pursuit_path = os.path.abspath(highway_pursuit_path)
         self.dll_path = os.path.abspath(dll_path)
         self.is_real_time = is_real_time
+        self.shared_memory_handles = []
+
+    def _create_shared_memory(self, name, size):
+        sm = shared_memory.SharedMemory(name=name, size=size, create=True)
+        self.shared_memory_handles.append(sm)
+        return sm
 
     def create_process_and_connect(self):
         # Generate name for mutex and share memory sections
@@ -77,6 +83,7 @@ class HighwayPursuitClient:
         lock_server_name = f"{self._app_resources_id}{server_mutex_id}"
         lock_client_name = f"{self._app_resources_id}{client_mutex_id}"
 
+        return_code_memory_name = f"{self._app_resources_id}{return_code_memory_id}"
         server_info_memory_name = f"{self._app_resources_id}{server_info_memory_id}"
         instruction_memory_name = f"{self._app_resources_id}{instruction_memory_id}"
         observation_memory_name = f"{self._app_resources_id}{observation_memory_id}"
@@ -90,8 +97,14 @@ class HighwayPursuitClient:
         self._lock_server_pool = Semaphore(lock_server_name, initial_count=0, max_count=1) 
         self._lock_client_pool = Semaphore(lock_client_name, initial_count=0, max_count=1)
 
+        # Create the shared memory for the return code
+        # Write some value that has to be overwritten by the server to ensure it is initialized
+        self._return_code_sm = self._create_shared_memory(name=return_code_memory_name, size=ctypes.sizeof(ReturnCode))
+        init_return_code = bytearray(ReturnCode(ErrorCode.NOT_ACK.value))
+        self._return_code_sm.buf[:len(init_return_code)] = init_return_code
+
         # Create the initial shared memory for retrieving server info
-        self._server_info_sm = shared_memory.SharedMemory(name=server_info_memory_name, size=ctypes.sizeof(ServerInfo), create=True)
+        self._server_info_sm = self._create_shared_memory(name=server_info_memory_name, size=ctypes.sizeof(ServerInfo))
         
         # Start the server process
         self._start_process()
@@ -105,15 +118,15 @@ class HighwayPursuitClient:
         self.action_count = server_info.action_count
         
         # Create the remaining shared memory
-        self._instruction_sm = shared_memory.SharedMemory(name=instruction_memory_name, size=ctypes.sizeof(Instruction), create=True)
-        self._info_sm = shared_memory.SharedMemory(name=info_memory_name, size=ctypes.sizeof(Info), create=True)
-        self._reward_sm = shared_memory.SharedMemory(name=reward_memory_name, size=ctypes.sizeof(Reward), create=True)
-        self._termination_sm = shared_memory.SharedMemory(name=termination_memory_name, size=ctypes.sizeof(Termination), create=True)
+        self._instruction_sm = self._create_shared_memory(name=instruction_memory_name, size=ctypes.sizeof(Instruction))
+        self._info_sm = self._create_shared_memory(name=info_memory_name, size=ctypes.sizeof(Info))
+        self._reward_sm = self._create_shared_memory(name=reward_memory_name, size=ctypes.sizeof(Reward))
+        self._termination_sm = self._create_shared_memory(name=termination_memory_name, size=ctypes.sizeof(Termination))
 
         observation_buffer_size = np.prod(self.observation_shape).item()
         action_buffer_size = self.action_count # one byte per action
-        self._observation_sm = shared_memory.SharedMemory(name=observation_memory_name, size=observation_buffer_size, create=True)
-        self._action_sm = shared_memory.SharedMemory(name=action_memory_name, size=action_buffer_size, create=True)
+        self._observation_sm = self._create_shared_memory(name=observation_memory_name, size=observation_buffer_size)
+        self._action_sm = self._create_shared_memory(name=action_memory_name, size=action_buffer_size)
 
         # Server will now connect to the shared memory
         self._sync_wait_for_serv()
@@ -153,21 +166,11 @@ class HighwayPursuitClient:
 
         # At this point, the server shouldn't use any shared resource
         # Clean up everything
-        self._server_info_sm.close()
-        self._instruction_sm.close()
-        self._observation_sm.close()
-        self._info_sm.close()
-        self._reward_sm.close()
-        self._action_sm.close()
-        self._termination_sm.close()
+        for sm in self.shared_memory_handles:
+            sm.close()
 
-        self._server_info_sm.unlink()
-        self._instruction_sm.unlink()
-        self._observation_sm.unlink()
-        self._info_sm.unlink()
-        self._reward_sm.unlink()
-        self._action_sm.unlink()
-        self._termination_sm.unlink()
+        for sm in self.shared_memory_handles:
+            sm.unlink()
 
         self._lock_client_pool.close()
         self._lock_server_pool.close()
@@ -187,11 +190,11 @@ class HighwayPursuitClient:
         wait_result = self._lock_client_pool.acquire(HighwayPursuitClient.SERVER_TIMEOUT)
         
         has_server_timed_out = (wait_result != 0)
-        error_code = self._check_error()
-        if(has_server_timed_out or error_code != ErrorCode.OK.value):
+        error_code = self._get_error()
+        if(has_server_timed_out or error_code != ErrorCode.ACK.value):
             message = f"Server error: {ErrorCode(error_code).name}{' (+ timeout)' if has_server_timed_out else ''}"
             raise Exception(message)
 
-    def _check_error(self):
-        #TODO
-        return ErrorCode.OK.value
+    def _get_error(self):
+        return_code = ReturnCode.from_buffer_copy(self._return_code_sm.buf)
+        return return_code.code

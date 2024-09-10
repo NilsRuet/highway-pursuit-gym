@@ -8,20 +8,21 @@ namespace HighwayPursuitServer.Exceptions
 {
     public enum ErrorCode : byte
     {
-        OK = 0,
+        NOT_ACK = 0xFF,
+        ACKNOWLEDGED = 0,
         NATIVE_ERROR = 1,
         CLIENT_TIMEOUT = 2,
         GAME_TIMEOUT = 3,
         UNSUPPORTED_BACKBUFFER_FORMAT = 4,
         UNKNOWN_ACTION = 5,
-        INIT = 0xFF
     }
 
     class HighwayPursuitException : Exception
     {
+        public readonly ErrorCode code;
         public HighwayPursuitException(ErrorCode code) : base($"Highway pursuit server error : 0x{(int)code:x}")
         {
-            
+            this.code = code;
         }
     }
 }

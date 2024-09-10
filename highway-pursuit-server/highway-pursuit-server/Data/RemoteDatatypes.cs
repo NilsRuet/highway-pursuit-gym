@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HighwayPursuitServer.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -7,6 +8,16 @@ using System.Threading.Tasks;
 
 namespace HighwayPursuitServer.Data
 {
+    [StructLayout(LayoutKind.Sequential)]
+    public struct ReturnCode
+    {
+        public byte code;
+        public ReturnCode(ErrorCode code)
+        {
+            this.code = (byte)code;
+        }
+    }
+
     [StructLayout(LayoutKind.Sequential)]
     public struct ServerInfo
     {
@@ -22,6 +33,7 @@ namespace HighwayPursuitServer.Data
             this.actionCount = actionCount;
         }
     }
+
     public enum InstructionCode : uint
     {
         RESET = 1,

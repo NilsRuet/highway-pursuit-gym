@@ -93,9 +93,9 @@ namespace HighwayPursuitServer.Injected
 
         void Update_Hook()
         {
-            this._lockUpdatePool.WaitOne(); // No timeout needed because we might want to pause the game on purpose
+            _lockUpdatePool.WaitOne();
             Update();
-            this._lockServerPool.Release();
+            _lockServerPool.Release();
         }
         #endregion
 

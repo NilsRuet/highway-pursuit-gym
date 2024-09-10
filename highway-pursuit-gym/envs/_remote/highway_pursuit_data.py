@@ -34,4 +34,9 @@ class Termination(ctypes.Structure):
         ('truncated', ctypes.c_byte)
     )
 
+class ReturnCode(ctypes.Structure):
+    _fields_ = (
+        ('code', ctypes.c_byte),
+    )
+
 # Observation struct is not included because its size is dynamic based on the server config

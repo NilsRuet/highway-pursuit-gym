@@ -12,6 +12,7 @@ namespace HighwayPursuitServer.Data
         // TODO: maybe there is a way to read these from a file or something
         private const string serverMutexId = "a";
         private const string clientMutexId = "b";
+        private const string returnCodeMemoryId = "0";
         private const string serverInfoMemoryId = "1";
         private const string instructionMemoryId = "2";
         private const string observationMemoryId = "3";
@@ -23,6 +24,7 @@ namespace HighwayPursuitServer.Data
         public readonly bool isRealTime;
         public readonly string serverMutexName;
         public readonly string clientMutexName;
+        public readonly string returnCodeMemoryName;
         public readonly string serverInfoMemoryName;
         public readonly string instructionMemoryName;
         public readonly string observationMemoryName;
@@ -36,6 +38,7 @@ namespace HighwayPursuitServer.Data
             this.isRealTime = isRealTime;
             this.serverMutexName = $"{sharedResourcesPrefix}{serverMutexId}";
             this.clientMutexName = $"{sharedResourcesPrefix}{clientMutexId}";
+            this.returnCodeMemoryName = $"{sharedResourcesPrefix}{returnCodeMemoryId}";
             this.serverInfoMemoryName = $"{sharedResourcesPrefix}{serverInfoMemoryId}";
             this.instructionMemoryName = $"{sharedResourcesPrefix}{instructionMemoryId}";
             this.observationMemoryName = $"{sharedResourcesPrefix}{observationMemoryId}";

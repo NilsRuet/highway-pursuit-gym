@@ -20,17 +20,25 @@ namespace HighwayPursuitServer
 
         public void Run(EasyHook.RemoteHooking.IContext context, ServerOptions options)
         {
+            bool processWokenUp = false;
             try
             {
                 var comManager = new CommunicationManager(options);
                 var server = new Server.HighwayPursuitServer(comManager, options);
                 EasyHook.RemoteHooking.WakeUpProcess();
+                processWokenUp = true;
                 // Wait for the server, hooks are disabled if the main thread ends
                 server.serverTask.Wait();
-            } catch(Exception e)
+            }
+            catch (Exception e)
             {
-                // Some exception happended on instanciation
-                // TODO: log it
+                if (!processWokenUp)
+                {
+                    // This has to be called in all cases otherwise the process might stay alive indefinitely
+                    EasyHook.RemoteHooking.WakeUpProcess();
+                    // Some exception happened on instanciation
+                    // TODO: log it
+                }
             }
         }
     }

@@ -5,6 +5,7 @@ Defines the suffix of shared resources
 server_mutex_id = "a"
 client_mutex_id = "b"
 
+return_code_memory_id = "0"
 server_info_memory_id = "1"
 instruction_memory_id = "2"
 observation_memory_id = "3"
