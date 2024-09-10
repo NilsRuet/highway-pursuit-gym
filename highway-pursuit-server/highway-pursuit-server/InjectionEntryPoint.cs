@@ -29,6 +29,7 @@ namespace HighwayPursuitServer
                 processWokenUp = true;
                 // Wait for the server, hooks are disabled if the main thread ends
                 server.serverTask.Wait();
+                Environment.Exit(0);
             }
             catch (Exception e)
             {
@@ -38,6 +39,7 @@ namespace HighwayPursuitServer
                     EasyHook.RemoteHooking.WakeUpProcess();
                     Logger.LogException(e);
                 }
+                Environment.Exit(1);
             }
         }
     }

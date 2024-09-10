@@ -76,7 +76,6 @@ namespace HighwayPursuitServer.Server
                     _communicationManager.Dispose();
                 });
 
-            // TODO: That might be useless
             AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
             {
                 if (!serverTask.IsCompleted)
