@@ -9,28 +9,30 @@ def main():
     app_path = "C:\\Program Files (x86)\\HighwayPursuit\\HighwayPursuit.exe"
 
     images = []
-
-    t0 = time.time()
-
     env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False)
-    observation, info = env.reset()
-    print(observation.shape)
-    print(f"tps: {info.tps}, memory: {info.memory}")
 
-    images.append(observation)
+    episode_limit = 20
+    episode_count = 10
+    for i in range(episode_count):
+        t0 = time.time()
+        observation, info = env.reset()
+        print(observation.shape)
+        print(f"tps: {info.tps}, memory: {info.memory}")
 
-    done = False
-    step_count = 0
-
-    while not done and step_count < 500:
-        action = env.action_space.sample()
-        observation, reward, terminated, truncated, info = env.step(action)
-        done = truncated or terminated
         images.append(observation)
-        step_count+=1
-    env.close()
 
-    print(f"1000 steps in {time.time() - t0}")
+        done = False
+        step_count = 0
+
+        while not done and step_count < episode_limit:
+            action = env.action_space.sample()
+            observation, reward, terminated, truncated, info = env.step(action)
+            done = truncated or terminated
+            images.append(observation)
+            step_count+=1
+        print(f"{step_count / (time.time() - t0)} steps/s")
+
+    env.close()
     input("Waiting for key press...")
 
     for image in images:

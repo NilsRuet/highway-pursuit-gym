@@ -45,7 +45,7 @@ namespace HighwayPursuitServer.Server
 
             // Init the update semaphore
             // Allow one game update, zero server update as the initial state
-            _lockUpdatePool = new Semaphore(initialCount: 1, maximumCount: 1);
+            _lockUpdatePool = new Semaphore(initialCount: 0, maximumCount: 1);
             _lockServerPool = new Semaphore(initialCount: 0, maximumCount: 1);
 
             // Init services & hooks
@@ -83,17 +83,11 @@ namespace HighwayPursuitServer.Server
             };
         }
 
-        private void WaitUpdateAndExecute(Action action)
+        private void WaitGameUpdate()
         {
+            _updateService.UpdateTime();
+            _lockUpdatePool.Release();
             _lockServerPool.WaitOne();
-            try
-            {
-                action();
-            }
-            finally
-            {
-                _lockUpdatePool.Release();
-            }
         }
 
         private void ServerThread(CancellationTokenSource cts)
@@ -103,10 +97,7 @@ namespace HighwayPursuitServer.Server
             startTick = Environment.TickCount;
             if (!cts.IsCancellationRequested)
             {
-                WaitUpdateAndExecute(() =>
-                {
-                    _updateService.UpdateTime();
-                });
+                WaitGameUpdate();
             }
 
             // Main loop
@@ -145,24 +136,19 @@ namespace HighwayPursuitServer.Server
         private void Reset()
         {
             // Reset the episode
-            WaitUpdateAndExecute(() =>
-            {
-                _episodeService.NewGame();
-                _direct3D8Service.ResetZoomLevel();
-                _updateService.UpdateTime();
-            });
+            _episodeService.NewGame();
+            _direct3D8Service.ResetZoomLevel();
+
+            // Wait for one frame for the rendering buffer to update
+            WaitGameUpdate();
 
             // Update step variables
             _step = 0;
             _lastRewardedStep = 0;
 
-            // Wait for one frame for the new episode starting state
-            WaitUpdateAndExecute(() =>
-            {
-                // Transfer state/info
-                _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
-                _communicationManager.WriteInfoBuffer(new Info(1.0f, 2.0f));
-            });
+            // Transfer state/info
+            _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
+            _communicationManager.WriteInfoBuffer(new Info(1.0f, 2.0f));
         }
 
         // Fast game update
@@ -196,32 +182,30 @@ namespace HighwayPursuitServer.Server
         // Frame code
         private void Step()
         {
-            WaitUpdateAndExecute(
-            () =>
+            // Get action
+            List<Input> actions = _communicationManager.ReadActions();
+            _inputService.SetInput(actions);
+
+            // Apply action and get next state
+            WaitGameUpdate();
+
+            // Get game state
+            _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
+
+            // Get reward
+            var reward = _scoreService.PullReward();
+            _communicationManager.WriteRewardBuffer(new Reward(reward));
+            if (reward != 0)
             {
-                // Get action
-                // TODO: actions are effectively delayed. This doesn't take effect during the current transition but during the next one.
-                List<Input> actions = _communicationManager.ReadActions();
-                _inputService.SetInput(actions);
+                _lastRewardedStep = _step;
+            }
 
-                // Get game state
-                _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
+            // Next step
+            _updateService.UpdateTime();
+            _step++;
 
-                // Get reward
-                var reward = _scoreService.PullReward();
-                _communicationManager.WriteRewardBuffer(new Reward(reward));
-                if (reward != 0)
-                {
-                    _lastRewardedStep = _step;
-                }
-
-                // Next step
-                _updateService.UpdateTime();
-                _step++;
-
-                HandleSoftlock();
-                HandleMetrics();
-            });
+            HandleSoftlock();
+            HandleMetrics();
         }
 
         // Safeguard against "softlock" states that may happens
