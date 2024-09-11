@@ -9,7 +9,6 @@ namespace HighwayPursuitServer.Data
     [Serializable]
     public struct ServerOptions
     {
-        // TODO: maybe there is a way to read these from a file or something
         private const string serverMutexId = "a";
         private const string clientMutexId = "b";
         private const string returnCodeMemoryId = "0";

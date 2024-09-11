@@ -1,7 +1,6 @@
 """
 Defines the suffix of shared resources
 """
-# TODO: maybe these can be part of a shared config file
 server_mutex_id = "a"
 client_mutex_id = "b"
 
