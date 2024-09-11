@@ -144,7 +144,7 @@ namespace HighwayPursuitServer.Server
                     // Return an error if step is called without reset (player dead)
                     if ((!_firstEpisodeInitialized) || _lastStepTermination.IsDone())
                     {
-                        _communicationManager.WriteError(ErrorCode.ENVIRONMENT_NOT_RESET);
+                        _communicationManager.WriteNonFatalError(ErrorCode.ENVIRONMENT_NOT_RESET);
                     }
 
                     // Step at max speed or real time depending on the option

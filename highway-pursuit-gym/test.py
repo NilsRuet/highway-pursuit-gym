@@ -17,7 +17,7 @@ def main():
             images.append(img) 
 
     log_dir = os.path.join(os.getcwd(), "logs") 
-    env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=True, frameskip=4, log_dir=log_dir)
+    env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False, frameskip=4, log_dir=log_dir)
 
     episode_count = 3
     for _ in range(episode_count):

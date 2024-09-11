@@ -33,6 +33,8 @@ namespace HighwayPursuitServer.Server
         private MemoryMappedViewAccessor _actionSM;
         private MemoryMappedViewAccessor _terminationSM;
 
+        private bool _cleanLastErrorOnNextRequest = false;
+
         private readonly List<IDisposable> _disposableResources = new List<IDisposable>();
 
         public CommunicationManager(ServerOptions args)
@@ -54,7 +56,7 @@ namespace HighwayPursuitServer.Server
                 _returnCodeSM = ConnectToSharedMemory(_args.returnCodeMemoryName);
                 _serverInfoSM = ConnectToSharedMemory(_args.serverInfoMemoryName);
 
-                WriteOk();
+                WriteOK();
                 WriteStructToSharedMemory(_serverInfo, _serverInfoSM);
             });
 
@@ -85,6 +87,12 @@ namespace HighwayPursuitServer.Server
             {
                 try
                 {
+                    if (_cleanLastErrorOnNextRequest)
+                    {
+                        WriteOK();
+                        _cleanLastErrorOnNextRequest = false;
+                    }
+
                     action();
                 }
                 // We need to write the exception before releasing so the client doesn't use invaldi data
@@ -173,16 +181,17 @@ namespace HighwayPursuitServer.Server
             return accessor;
         }
 
-        public void WriteOk()
+        public void WriteOK()
         {
             // The return code is set to ACK once when the client connects to the server
             // As a way to inform the client that the server is initialized properly
             WriteStructToSharedMemory(new ReturnCode(ErrorCode.ACKNOWLEDGED), _returnCodeSM);
         }
 
-        public void WriteError(ErrorCode code)
+        public void WriteNonFatalError(ErrorCode code)
         {
             WriteStructToSharedMemory(new ReturnCode(code), _returnCodeSM);
+            _cleanLastErrorOnNextRequest = true;
         }
 
         public void WriteException(HighwayPursuitException exception)
