@@ -28,7 +28,7 @@ namespace HighwayPursuitServer.Server
         private readonly EpisodeService _episodeService;
         private readonly UpdateService _updateService;
         private readonly InputService _inputService;
-        private readonly Direct3D8Service _direct3D8Service;
+        private readonly RenderingService _renderingService;
         private readonly ScoreService _scoreService;
         private readonly CheatService _cheatService;
         private readonly Semaphore _lockUpdatePool; // Update thread waits for this
@@ -57,12 +57,15 @@ namespace HighwayPursuitServer.Server
             _episodeService = new EpisodeService(_hookManager);
             _updateService = new UpdateService(_hookManager, _options.isRealTime, _lockServerPool, _lockUpdatePool, FPS, PERFORMANCE_COUNTER_FREQUENCY);
             _inputService = new InputService(_hookManager);
-            _direct3D8Service = new Direct3D8Service(_hookManager);
+            _renderingService = new RenderingService(_hookManager);
             _scoreService = new ScoreService(_hookManager);
             _cheatService = new CheatService(_hookManager);
 
             // Activate hooks on all threads except the current thread
             _hookManager.EnableHooks();
+
+            // This needs to be set before the process wakes up
+            _renderingService.SetFullscreenFlag(false);
         }
 
         public void Run()
@@ -74,7 +77,7 @@ namespace HighwayPursuitServer.Server
                 SkipIntro();
 
                 // Get server info now that the D3D device is initialized
-                D3DDISPLAYMODE display = _direct3D8Service.GetDisplayMode();
+                D3DDISPLAYMODE display = _renderingService.GetDisplayMode();
                 var serverInfo = new ServerInfo(
                     display.Height,
                     display.Width,
@@ -128,7 +131,7 @@ namespace HighwayPursuitServer.Server
             // Calling new game skips the intro
             // We then skip the initial zoom out, and wait 2 frames for the fade out the complete
             _episodeService.NewGame();
-            _direct3D8Service.ResetZoomLevel();
+            _renderingService.ResetZoomLevel();
             WaitGameUpdate();
             WaitGameUpdate();
         }
@@ -194,7 +197,7 @@ namespace HighwayPursuitServer.Server
             _lastStepTermination = new Termination(false, false);
 
             // Return state/info
-            _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
+            _renderingService.Screenshot(_communicationManager.WriteObservationBuffer);
             _communicationManager.WriteInfoBuffer(_currentInfo);
         }
 
@@ -274,7 +277,7 @@ namespace HighwayPursuitServer.Server
             }
 
             // Write return values
-            _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
+            _renderingService.Screenshot(_communicationManager.WriteObservationBuffer);
             _communicationManager.WriteRewardBuffer(new Reward(cumulatedReward));
             _communicationManager.WriteInfoBuffer(_currentInfo);
             _communicationManager.WriteTerminationBuffer(_lastStepTermination);

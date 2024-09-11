@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace HighwayPursuitServer.Injected
 {
-    class Direct3D8Service
+    class RenderingService
     {
         private const float FULL_ZOOM = 10.0f;
         private readonly IHookManager _hookManager;
@@ -26,13 +26,13 @@ namespace HighwayPursuitServer.Injected
         };
 
 
-        public Direct3D8Service(IHookManager hookManager)
+        public RenderingService(IHookManager hookManager)
         {
             this._hookManager = hookManager;
-            this.RegisterFunctions();
+            this.RegisterHooks();
         }
 
-        ~Direct3D8Service()
+        ~RenderingService()
         {
             if (pSurface != IntPtr.Zero)
             {
@@ -50,10 +50,26 @@ namespace HighwayPursuitServer.Injected
 
         public D3DDISPLAYMODE GetDisplayMode()
         {
-
             D3DDISPLAYMODE displayMode = new D3DDISPLAYMODE();
             HandleDRDERR(IDirect3DDevice8.GetDisplayMode(Device, ref displayMode));
             return displayMode;
+        }
+
+        public void SetFullscreenFlag(bool useFullscreen)
+        {
+            IntPtr module = _hookManager.GetModuleBase();
+            IntPtr fullscreenFlag = new IntPtr(module.ToInt32() + MemoryAdresses.FULLSCREEN_FLAG_OFFSET);
+            Marshal.WriteByte(fullscreenFlag, useFullscreen ? (byte)0x1 : (byte)0x0);
+        }
+
+        public void ResetZoomLevel()
+        {
+            IntPtr module = _hookManager.GetModuleBase();
+            IntPtr zoomAnimValue = new IntPtr(module.ToInt32() + MemoryAdresses.CAMERA_ZOOM_ANIM_OFFSET);
+
+            // Write float value into the camera zoom value offset
+            byte[] bytes = BitConverter.GetBytes(FULL_ZOOM);
+            Marshal.Copy(bytes, 0, zoomAnimValue, bytes.Length);
         }
 
         private void EnsureSurface()
@@ -79,16 +95,6 @@ namespace HighwayPursuitServer.Injected
                 pSurface = new IntPtr(pSurfaceValue);
                 _currentSurfaceDisplayMode = displayMode;
             }
-        }
-
-        public void ResetZoomLevel()
-        {
-            IntPtr module = _hookManager.GetModuleBase();
-            IntPtr zoomAnimValue = new IntPtr(module.ToInt32() + MemoryAdresses.CAMERA_ZOOM_ANIM_OFFSET);
-
-            // Write float value into the camera zoom value offset
-            byte[] bytes = BitConverter.GetBytes(FULL_ZOOM);
-            Marshal.Copy(bytes, 0, zoomAnimValue, bytes.Length);
         }
 
         public void Screenshot(Action<IntPtr> pixelDataHandler)
@@ -118,13 +124,19 @@ namespace HighwayPursuitServer.Injected
         }
 
         #region Hooking
-        private void RegisterFunctions()
+        private void RegisterHooks()
         {
-            var d3d8 = _hookManager.GetD3D8Base();
+            var moduleBase = _hookManager.GetModuleBase();
+            // Window Procedure
+            IntPtr windowProcPtr = new IntPtr(moduleBase.ToInt32() + MemoryAdresses.WINDOW_PROC_OFFSET);
+            WindowProcedure = Marshal.GetDelegateForFunctionPointer<WindowProcedure_delegate>(windowProcPtr);
+            _hookManager.RegisterHook(windowProcPtr, new WindowProcedure_delegate(WindowProcedureHook));
 
+            // D3D8 functions
+            var d3d8 = _hookManager.GetD3D8Base();
             // Get display mode
-            IntPtr getDisplayModeptr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.GET_DISPLAY_MODE_OFFSET);
-            IDirect3DDevice8.GetDisplayMode = Marshal.GetDelegateForFunctionPointer<GetDisplayMode_delegate>(getDisplayModeptr);
+            IntPtr getDisplayModePtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.GET_DISPLAY_MODE_OFFSET);
+            IDirect3DDevice8.GetDisplayMode = Marshal.GetDelegateForFunctionPointer<GetDisplayMode_delegate>(getDisplayModePtr);
 
             // Create image surface
             IntPtr createImageSurfacePtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.CREATE_SURFACE_IMAGE_OFFSET);
@@ -156,6 +168,27 @@ namespace HighwayPursuitServer.Injected
             return new IntPtr(Marshal.ReadInt32(new IntPtr(_hookManager.GetModuleBase().ToInt32() + MemoryAdresses.DEVICE_PTR_OFFSET)));
         }
 
+        #region hooks
+        void WindowProcedureHook(IntPtr hwnd, uint uMsg, uint wParam, uint lParam)
+        {
+            const uint focused = 1;
+            const uint WM_ACTIVATEAPP = 0x1c;
+            const uint WM_ACTIVATE = 0x6;
+            // Disable the "lose focus" callback to disable pausing
+            if (uMsg == WM_ACTIVATEAPP || uMsg == WM_ACTIVATE)
+            {
+                WindowProcedure(hwnd, uMsg, focused, lParam);
+            }
+            else
+            {
+                WindowProcedure(hwnd, uMsg, wParam, lParam);
+            }
+        }
+        #endregion
+
+        #region window management functions
+        static WindowProcedure_delegate WindowProcedure;
+        #endregion
         #region D3D8 Functions
         static class IDirect3DDevice8
         {
@@ -174,6 +207,10 @@ namespace HighwayPursuitServer.Injected
         #endregion
 
         #region delegates        
+        #region
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        delegate void WindowProcedure_delegate(IntPtr hwnd, uint uMsg, uint wParam, uint lParam);
+        #endregion
         #region device methods
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
@@ -190,7 +227,6 @@ namespace HighwayPursuitServer.Injected
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
         delegate uint CopyRects_delegate(IntPtr pDevice, IntPtr pSourceSurface, IntPtr pSourceRectsArray, uint cRects, IntPtr pDestinationSurface, IntPtr pDestPointsArray);
-
         #endregion
         #region Surface methods
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]

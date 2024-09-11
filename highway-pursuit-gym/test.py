@@ -11,7 +11,7 @@ def main():
 
     images = []
     max_images = 50
-    image_skip = 20
+    image_skip = 60
     def record_step(step, img):
         if(len(images) < max_images and (step % image_skip) == 0):
             images.append(img) 
@@ -20,11 +20,10 @@ def main():
     options = HighwayPursuitEnv.get_default_options()
     options["real_time"] = False
     options["frameskip"] = 4
-    options["max_memory_usage"] = 50.0
     options["log_dir"] = log_dir
 
     env = HighwayPursuitEnv(launcher_path, app_path, dll_path, options=options)
-    env = NoRewardTimeoutWrapper(env, timeout=(60*45) / options["frameskip"])
+    # env = NoRewardTimeoutWrapper(env, timeout=(60*45) / options["frameskip"])
 
     episode_count = 3
     for _ in range(episode_count):

@@ -69,9 +69,6 @@ namespace HighwayPursuitServer.Injected
         uint GetDeviceState_Hook(IntPtr pInput, uint deviceSize, IntPtr pDeviceStateArray)
         {
             uint res = GetDeviceState(pInput, deviceSize, pDeviceStateArray);
-            // Don't do anything if device acquisition failed
-            if (res != 0) return res;
-
 #if DEBUG
             // Don't do anything in manual control
             byte[] originalState = new byte[deviceSize];

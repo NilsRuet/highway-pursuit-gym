@@ -9,6 +9,7 @@ namespace HighwayPursuitServer.Injected
     static class MemoryAdresses
     {
         #region HighwayPursuit.exe
+        public const uint WINDOW_PROC_OFFSET = 0x166f0;
         public const uint RESET_OFFSET = 0x22A70;
         public const uint RESPAWN_OFFSET = 0x11D80;
         public const uint UPDATE_OFFSET = 0x29420;
@@ -16,6 +17,7 @@ namespace HighwayPursuitServer.Injected
         public const uint SET_LIFE_COUNT_OFFSET = 0x15c50;
         public const uint SET_SCORE_OFFSET = 0x15C00;
         public const uint DEVICE_PTR_OFFSET = 0x960CC;
+        public const uint FULLSCREEN_FLAG_OFFSET = 0x7C1D9;
         public const uint CAMERA_ZOOM_ANIM_OFFSET = 0x7C1E4;
         public const uint ACCELERATE_OFFSET = 0x969E8;
         public const uint BRAKE_OFFSET = 0x969EC;

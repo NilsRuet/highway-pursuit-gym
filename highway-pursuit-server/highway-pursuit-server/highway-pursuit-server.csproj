@@ -54,7 +54,7 @@
     <Compile Include="Exceptions\HighwayPursuitException.cs" />
     <Compile Include="Injected\InputService.cs" />
     <Compile Include="Injected\CheatService.cs" />
-    <Compile Include="Injected\D3D8Service.cs" />
+    <Compile Include="Injected\RenderingService.cs" />
     <Compile Include="Injected\EpisodeService.cs" />
     <Compile Include="Logger.cs" />
     <Compile Include="Server\HookManager.cs" />
