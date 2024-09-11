@@ -19,6 +19,7 @@ namespace HighwayPursuitServer.Server
         const int CLIENT_TIMEOUT = 2000; // TIMEOUT in ms
 
         private readonly ServerOptions _args;
+        private ServerInfo _serverInfo;
 
         private Semaphore _lockServerPool;
         private Semaphore _lockClientPool;
@@ -39,8 +40,11 @@ namespace HighwayPursuitServer.Server
             this._args = args;
         }
 
-        public void Connect()
+        public void Connect(ServerInfo serverInfo)
         {
+            // Update current server info
+            _serverInfo = serverInfo;
+
             // Open synchronization mutex
             _lockServerPool = Semaphore.OpenExisting(_args.serverMutexName);
             _lockClientPool = Semaphore.OpenExisting(_args.clientMutexName);
@@ -51,8 +55,7 @@ namespace HighwayPursuitServer.Server
                 _serverInfoSM = ConnectToSharedMemory(_args.serverInfoMemoryName);
 
                 WriteOk();
-                var serverInfo = new ServerInfo(480, 640, 4, 8); // TODO: get the actual values
-                WriteStructToSharedMemory(serverInfo, _serverInfoSM);
+                WriteStructToSharedMemory(_serverInfo, _serverInfoSM);
             });
 
             // Create the remaining memory accessors
@@ -108,12 +111,12 @@ namespace HighwayPursuitServer.Server
 
         public List<Input> ReadActions()
         {
-            const int actionCount = 8; // TODO: get from somewhere else
             List<Input> actions = new List<Input>();
 
             // Convert each non-zero byte to the corresponding action
+            uint actionCount = _serverInfo.actionCount;
             byte[] actionsTaken = new byte[actionCount];
-            _actionSM.ReadArray(0, actionsTaken, 0, actionCount);
+            _actionSM.ReadArray(0, actionsTaken, 0, (int)actionCount);
             for(int actionIndex = 0; actionIndex < actionCount; actionIndex++)
             {
                 if(actionsTaken[actionIndex] != 0)
@@ -125,23 +128,15 @@ namespace HighwayPursuitServer.Server
             return actions;
         }
 
-        public void WriteObservationBuffer(IntPtr buffer, D3DFORMAT format)
+        public void WriteObservationBuffer(IntPtr buffer)
         {
-            const int pixelCount = 640 * 480; // TODO dynamically compute pixel buffer size
             bool success = false;
             try
             {
                 _observationSM.SafeMemoryMappedViewHandle.DangerousAddRef(ref success);
                 IntPtr memoryPtr = _observationSM.SafeMemoryMappedViewHandle.DangerousGetHandle();
-                switch (format)
-                {
-                    case D3DFORMAT.D3DFMT_X8R8G8B8:
-                        const int channels = 4;
-                        CopyMemory(memoryPtr, buffer, channels * pixelCount);
-                        break;
-                    default:
-                        throw new HighwayPursuitException(ErrorCode.UNSUPPORTED_BACKBUFFER_FORMAT);
-                }
+                var bufferSize = _serverInfo.obsWidth * _serverInfo.obsHeight * _serverInfo.obsChannels;
+                CopyMemory(memoryPtr, buffer, bufferSize);
             }
             finally
             {

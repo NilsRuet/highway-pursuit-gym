@@ -27,8 +27,8 @@ namespace HighwayPursuitServer
                 var server = new Server.HighwayPursuitServer(comManager, options);
                 EasyHook.RemoteHooking.WakeUpProcess();
                 processWokenUp = true;
-                // Wait for the server, hooks are disabled if the main thread ends
-                server.serverTask.Wait();
+                // Run the server
+                server.Run();
                 Environment.Exit(0);
             }
             catch (Exception e)

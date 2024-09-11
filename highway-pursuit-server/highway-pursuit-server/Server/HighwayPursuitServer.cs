@@ -20,7 +20,6 @@ namespace HighwayPursuitServer.Server
         const int NO_REWARD_TIMEOUT = 60 * 45; // No rewards for 45 seconds result in a reset (softlock safeguard)
         const int LOG_PERIOD = 60 * 60; // update metrics every minute of gameplay
         // Instance members
-        public readonly Task serverTask;
         private readonly ServerOptions _options; // Game options
 
         private readonly CommunicationManager _communicationManager;
@@ -44,11 +43,8 @@ namespace HighwayPursuitServer.Server
 
         public HighwayPursuitServer(CommunicationManager communicationManager, ServerOptions options)
         {
-            _communicationManager = communicationManager;
+            _communicationManager = communicationManager; // This will connect once the game is initialized
             _options = options;
-
-            //Setup the communication
-            _communicationManager.Connect();
 
             // Setup interactions with the game
             _lockUpdatePool = new Semaphore(initialCount: 0, maximumCount: 1);
@@ -65,24 +61,50 @@ namespace HighwayPursuitServer.Server
 
             // Activate hooks on all threads except the current thread
             _hookManager.EnableHooks();
+        }
 
-            // Create the server thread
-            CancellationTokenSource cts = new CancellationTokenSource();
-            serverTask =
-                Task.Run(() => ServerThread(cts))
-                .ContinueWith((task) =>
-                {
-                    _hookManager.Release();
-                    _communicationManager.Dispose();
-                });
-
-            AppDomain.CurrentDomain.ProcessExit += (sender, e) =>
+        public void Run()
+        {
+            try
             {
-                if (!serverTask.IsCompleted)
+                // Wait for game to be initialized
+                WaitGameUpdate();
+                SkipIntro();
+
+                // Get server info now that the D3D device is initialized
+                D3DDISPLAYMODE display = _direct3D8Service.GetDisplayMode();
+                var serverInfo = new ServerInfo(
+                    display.Height,
+                    display.Width,
+                    display.GetChannelCount(),
+                    (uint)_inputService.GetInputCount()
+                );
+
+                // Setup the communication
+                _communicationManager.Connect(serverInfo);
+
+                startTick = Environment.TickCount;
+                while (!_terminated)
                 {
-                    cts.Cancel();
+                    _communicationManager.ExecuteOnInstruction(HandleInstruction);
                 }
-            };
+            }
+            // Exception handling for the server thread
+            catch (HighwayPursuitException e)
+            {
+                _communicationManager.WriteException(e);
+                Logger.LogException(e);
+            }
+            catch (Exception e)
+            {
+                _communicationManager.WriteException(new HighwayPursuitException(ErrorCode.NATIVE_ERROR));
+                Logger.LogException(e);
+            }
+            finally
+            {
+                _hookManager.Release();
+                _communicationManager.Dispose();
+            }
         }
 
         private void WaitGameUpdate()
@@ -93,51 +115,6 @@ namespace HighwayPursuitServer.Server
             if (!acquired)
             {
                 throw new HighwayPursuitException(ErrorCode.GAME_TIMEOUT);
-            }
-        }
-
-        private void ServerThread(CancellationTokenSource cts)
-        {
-            try
-            {
-                startTick = Environment.TickCount;
-                if (!cts.IsCancellationRequested)
-                {
-                    // wait for game to be initialized
-                    WaitGameUpdate();
-                    SkipIntro();
-                }
-
-                // Main loop
-                while (!cts.IsCancellationRequested && !_terminated)
-                {
-                    _communicationManager.ExecuteOnInstruction(HandleInstruction);
-                }
-            }
-            // Serve thread top-level exception handling
-            catch (HighwayPursuitException e)
-            {
-                try
-                {
-                    _communicationManager.WriteException(e);
-                    Logger.LogException(e);
-                }
-                finally
-                {
-                    cts.Cancel();
-                }
-            }
-            catch (Exception e)
-            {
-                try
-                {
-                    _communicationManager.WriteException(new HighwayPursuitException(ErrorCode.NATIVE_ERROR));
-                    Logger.LogException(e);
-                }
-                finally
-                {
-                    cts.Cancel();
-                }
             }
         }
 
@@ -230,7 +207,8 @@ namespace HighwayPursuitServer.Server
                 {
                     Thread.SpinWait(1);
                 }
-            } else
+            }
+            else
             {
                 Logger.Log("Game update took longer than one frame.", Logger.Level.Warning);
             }

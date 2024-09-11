@@ -2,6 +2,7 @@
 using HighwayPursuitServer.Server;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -14,11 +15,16 @@ namespace HighwayPursuitServer.Injected
     {
         private const float FULL_ZOOM = 10.0f;
         private readonly IHookManager _hookManager;
-        private const D3DFORMAT PIXEL_FORMAT = D3DFORMAT.D3DFMT_X8R8G8B8;
         public IntPtr Device => GetDevice();
         private IntPtr pSurface = IntPtr.Zero;
-        private uint _currentWidth = 0;
-        private uint _currentHeight = 0;
+        private D3DDISPLAYMODE _currentSurfaceDisplayMode = new D3DDISPLAYMODE()
+        {
+            Width = 0,
+            Height = 0,
+            RefreshRate = 0,
+            Format = D3DFORMAT.D3DFMT_UNKNOWN
+        };
+
 
         public Direct3D8Service(IHookManager hookManager)
         {
@@ -42,37 +48,36 @@ namespace HighwayPursuitServer.Injected
             }
         }
 
+        public D3DDISPLAYMODE GetDisplayMode()
+        {
+
+            D3DDISPLAYMODE displayMode = new D3DDISPLAYMODE();
+            HandleDRDERR(IDirect3DDevice8.GetDisplayMode(Device, ref displayMode));
+            return displayMode;
+        }
+
         private void EnsureSurface()
         {
             // Get display mode
-            D3DDISPLAYMODE displayMode = new D3DDISPLAYMODE();
-            HandleDRDERR(IDirect3DDevice8.GetDisplayMode(Device, ref displayMode));
-
-            // Init width/height
-            if (_currentWidth == 0 && _currentHeight == 0)
-            {
-                _currentWidth = displayMode.Width;
-                _currentHeight = displayMode.Height;
-            }
+            var displayMode = GetDisplayMode();
 
             // Flag about creating a new surface
-            bool createSurface = (pSurface == IntPtr.Zero);
+            bool surfaceInitialized = (pSurface != IntPtr.Zero);
+            bool shouldUpdateSurface = (!surfaceInitialized) || (!_currentSurfaceDisplayMode.IsSameAs(displayMode));
 
-            // Release the current surface, and set the flag to create a new one
-            if (_currentWidth != displayMode.Width || _currentHeight != displayMode.Height)
+            // Release the current surface
+            if (shouldUpdateSurface && surfaceInitialized)
             {
                 HandleDRDERR(IDirect3DSurface8.Release(pSurface));
-                createSurface = true;
             }
 
             // Create surface if necessary
-            if (createSurface)
+            if (shouldUpdateSurface)
             {
                 uint pSurfaceValue = 0;
-                HandleDRDERR(IDirect3DDevice8.CreateImageSurface(Device, displayMode.Width, displayMode.Height, (uint)PIXEL_FORMAT, ref pSurfaceValue));
+                HandleDRDERR(IDirect3DDevice8.CreateImageSurface(Device, displayMode.Width, displayMode.Height, (uint)displayMode.Format, ref pSurfaceValue));
                 pSurface = new IntPtr(pSurfaceValue);
-                _currentWidth = displayMode.Width;
-                _currentHeight = displayMode.Height;
+                _currentSurfaceDisplayMode = displayMode;
             }
         }
 
@@ -86,7 +91,7 @@ namespace HighwayPursuitServer.Injected
             Marshal.Copy(bytes, 0, zoomAnimValue, bytes.Length);
         }
 
-        public void Screenshot(Action<IntPtr, D3DFORMAT> pixelDataHandler)
+        public void Screenshot(Action<IntPtr> pixelDataHandler)
         {
             EnsureSurface();
 
@@ -102,8 +107,9 @@ namespace HighwayPursuitServer.Injected
                 // Lock pixels
                 HandleDRDERR(IDirect3DSurface8.LockRect(pSurface, out D3DLOCKED_RECT lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY));
                 // Handle pixel data
-                pixelDataHandler(lockedRect.pBits, PIXEL_FORMAT);
-            } finally
+                pixelDataHandler(lockedRect.pBits);
+            }
+            finally
             {
                 // Release resources
                 HandleDRDERR(IDirect3DSurface8.UnlockRect(pSurface));

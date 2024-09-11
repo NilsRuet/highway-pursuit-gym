@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HighwayPursuitServer.Exceptions;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -28,7 +29,26 @@ namespace HighwayPursuitServer.Data
         public uint Height;
         public uint RefreshRate;
         public D3DFORMAT Format;
-    };
+
+        public bool IsSameAs(D3DDISPLAYMODE displayMode)
+        {
+            return Width == displayMode.Width &&
+                   Height == displayMode.Height &&
+                   RefreshRate == displayMode.RefreshRate &&
+                   Format == displayMode.Format;
+        }
+
+        public uint GetChannelCount()
+        {
+            switch (Format)
+            {
+                case D3DFORMAT.D3DFMT_X8R8G8B8:
+                    return 4;
+                default:
+                    throw new HighwayPursuitException(ErrorCode.UNSUPPORTED_BACKBUFFER_FORMAT);
+            }
+        }
+    }
 
     public enum D3DBACKBUFFER_TYPE
     {
@@ -92,6 +112,6 @@ namespace HighwayPursuitServer.Data
         D3DFMT_INDEX16 = 101,
         D3DFMT_INDEX32 = 102,
 
-        D3DFMT_FORCE_DWORD = 0x7fffffff
+        D3DFMT_FORCE_DWORD = 0x7fffffff,
     }
 }

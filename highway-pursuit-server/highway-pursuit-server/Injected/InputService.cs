@@ -39,6 +39,11 @@ namespace HighwayPursuitServer.Injected
         }
 
         #region input management
+        public int GetInputCount()
+        {
+            return _inputToOffset.Count;
+        }
+        
         public void SetInput(List<Input> inputs)
         {
             this._currentInputs = inputs;

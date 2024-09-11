@@ -9,8 +9,13 @@ def main():
     dll_path = "..\\highway-pursuit-server\\highway-pursuit-server\\bin\\Debug\\HighwayPursuitServer.dll"
     app_path = "C:\\Program Files (x86)\\HighwayPursuit\\HighwayPursuit.exe"
 
-    max_images = 50
     images = []
+    max_images = 50
+    image_skip = 20
+    def record_step(step, img):
+        if(len(images) < max_images and step % image_skip == 0):
+            images.append(img) 
+
 
     log_dir = os.path.join(os.getcwd(), "logs") 
     env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False, log_dir=log_dir)
@@ -20,10 +25,9 @@ def main():
     for _ in range(episode_count):
         t0 = time.time()
         observation, info = env.reset()
-        print(f"tps: {info.tps}, memory: {info.memory}")
 
-        if(len(images) < max_images):
-            images.append(observation)
+        print(f"tps: {info.tps}, memory: {info.memory}")
+        record_step(0, observation)
 
         done = False
         step_count = 0
@@ -32,11 +36,9 @@ def main():
             action = env.action_space.sample()
             observation, reward, terminated, truncated, info = env.step(action)
             done = truncated or terminated
-
-            if(len(images) < max_images):
-                images.append(observation)
-
             step_count += 1
+            record_step(step_count, observation)
+
 
         print(f"{step_count / (time.time() - t0)} steps/s")
 
