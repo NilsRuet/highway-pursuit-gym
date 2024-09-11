@@ -33,11 +33,13 @@ namespace HighwayPursuitServer.Server
         private readonly Semaphore _lockUpdatePool; // Update thread waits for this
         private readonly Semaphore _lockServerPool; // Server thread waits for this
 
-        private bool _firstEpisode = true;
-        private bool _terminated = false;
+
+        private bool _firstEpisodeInitialized = false;
+        private bool _serverTerminated = false;
         private long _step; // current step
         private long _totalSteps;
         private long _lastRewardedStep; // last step where reward wasn't zero
+        private Termination _lastStepTermination = new Termination(false, false);
         private long startTick; // used to measure performance
 
 
@@ -84,7 +86,7 @@ namespace HighwayPursuitServer.Server
                 _communicationManager.Connect(serverInfo);
 
                 startTick = Environment.TickCount;
-                while (!_terminated)
+                while (!_serverTerminated)
                 {
                     _communicationManager.ExecuteOnInstruction(HandleInstruction);
                 }
@@ -136,6 +138,13 @@ namespace HighwayPursuitServer.Server
                     Reset();
                     break;
                 case InstructionCode.STEP:
+                    // Return an error if step is called without reset (player dead)
+                    if ((!_firstEpisodeInitialized) || _lastStepTermination.IsDone())
+                    {
+                        _communicationManager.WriteError(ErrorCode.ENVIRONMENT_NOT_RESET);
+                    }
+
+                    // Step at max speed or real time depending on the option
                     if (_options.isRealTime)
                     {
                         StepRealTime();
@@ -147,7 +156,7 @@ namespace HighwayPursuitServer.Server
                     break;
                 case InstructionCode.CLOSE:
                     // Notify end of loop
-                    _terminated = true;
+                    _serverTerminated = true;
                     // ensure the updates hooks are non-blocking
                     _updateService.DisableSemaphores();
                     _lockUpdatePool.Release();
@@ -160,16 +169,18 @@ namespace HighwayPursuitServer.Server
         private void Reset()
         {
             // Reset the episode
-            if (_firstEpisode)
+            if (!_firstEpisodeInitialized)
             {
                 // New game is called on the first episode because it fully resets the game state
                 _episodeService.NewGame();
-                _firstEpisode = false;
+                _firstEpisodeInitialized = true;
             }
-            else
+            // Respawn the player if last step has not done it naturally (if the client called reset without waiting for termination/truncation)
+            else if (!_lastStepTermination.IsDone())
             {
                 _episodeService.NewLife();
             }
+            // Reset last termination
 
             // Wait for one frame for the rendering buffer to update
             WaitGameUpdate();
@@ -177,6 +188,7 @@ namespace HighwayPursuitServer.Server
             // Update step variables
             _step = 0;
             _lastRewardedStep = 0;
+            _lastStepTermination = new Termination(false, false);
 
             // Transfer state/info
             _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
@@ -241,19 +253,23 @@ namespace HighwayPursuitServer.Server
             _step++;
             _totalSteps++;
 
-            HandleSoftlock();
+            // Truncation : safeguard against softlocks
+            bool truncated = false;
+            if (_step - _lastRewardedStep > NO_REWARD_TIMEOUT)
+            {
+                truncated = true;
+                _episodeService.Truncate();
+            }
+
+            // Check termination (death)
+            bool terminated = _episodeService.PullTerminated();
+
+            _lastStepTermination = new Termination(terminated: terminated, truncated: truncated);
+            _communicationManager.WriteTerminationBuffer(_lastStepTermination);
+
             HandleLogs();
         }
 
-        // Safeguard against "softlock" states that may happens
-        private void HandleSoftlock()
-        {
-            if (_step - _lastRewardedStep > NO_REWARD_TIMEOUT)
-            {
-                _episodeService.NewLife();
-                _lastRewardedStep = _step;
-            }
-        }
 
         // Tracks some useful metrics for debugging
         private void HandleLogs()

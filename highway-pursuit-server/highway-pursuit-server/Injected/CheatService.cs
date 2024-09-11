@@ -1,4 +1,5 @@
-﻿using HighwayPursuitServer.Server;
+﻿using HighwayPursuitServer.Data;
+using HighwayPursuitServer.Server;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,6 @@ namespace HighwayPursuitServer.Injected
 {
     class CheatService
     {
-        private const byte MAX_LIVES = 3;
         private readonly IHookManager _hookManager;
 
         public CheatService(IHookManager hookManager)
@@ -30,7 +30,7 @@ namespace HighwayPursuitServer.Injected
         #region hooks
         byte GetLifeCount_Hook()
         {
-            return MAX_LIVES;
+            return HighwayPursuitConstants.CHEATED_CONSTANT_LIVES;
         }
         #endregion
 

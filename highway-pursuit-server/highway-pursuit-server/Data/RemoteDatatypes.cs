@@ -78,10 +78,21 @@ namespace HighwayPursuitServer.Data
     {
         public byte terminated;
         public byte truncated;
-        public Termination(byte terminated, byte truncated)
+
+        public Termination(bool terminated, bool truncated)
         {
-            this.terminated = terminated;
-            this.truncated = truncated;
+            this.terminated = BoolToByte(terminated);
+            this.truncated = BoolToByte(truncated);
+        }
+
+        public bool IsDone()
+        {
+            return terminated > 0 || truncated > 0;
+        }
+
+        private static byte BoolToByte(bool value)
+        {
+            return value ? (byte)0x1 : (byte)0x0;
         }
     }
 }

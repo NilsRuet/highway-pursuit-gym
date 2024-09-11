@@ -15,12 +15,13 @@ namespace HighwayPursuitServer.Exceptions
         GAME_TIMEOUT = 3,
         UNSUPPORTED_BACKBUFFER_FORMAT = 4,
         UNKNOWN_ACTION = 5,
+        ENVIRONMENT_NOT_RESET = 6,
     }
 
     class HighwayPursuitException : Exception
     {
         public readonly ErrorCode code;
-        public HighwayPursuitException(ErrorCode code) : base($"Highway pursuit server error : 0x{(int)code:x}")
+        public HighwayPursuitException(ErrorCode code) : base($"Highway pursuit server error : 0x{(int)code:x} {code}")
         {
             this.code = code;
         }

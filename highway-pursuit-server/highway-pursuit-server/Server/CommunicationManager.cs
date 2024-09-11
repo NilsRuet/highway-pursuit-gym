@@ -180,6 +180,11 @@ namespace HighwayPursuitServer.Server
             WriteStructToSharedMemory(new ReturnCode(ErrorCode.ACKNOWLEDGED), _returnCodeSM);
         }
 
+        public void WriteError(ErrorCode code)
+        {
+            WriteStructToSharedMemory(new ReturnCode(code), _returnCodeSM);
+        }
+
         public void WriteException(HighwayPursuitException exception)
         {
             WriteStructToSharedMemory(new ReturnCode(exception.code), _returnCodeSM);

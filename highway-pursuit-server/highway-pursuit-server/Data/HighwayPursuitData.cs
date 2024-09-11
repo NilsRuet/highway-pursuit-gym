@@ -7,6 +7,11 @@ using System.Threading.Tasks;
 
 namespace HighwayPursuitServer.Data
 {
+    static class HighwayPursuitConstants
+    {
+        public const byte CHEATED_CONSTANT_LIVES = 3;
+    }
+
     public enum Input : uint
     {
         Accelerate,

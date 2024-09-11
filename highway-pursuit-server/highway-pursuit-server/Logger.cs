@@ -81,7 +81,7 @@ namespace HighwayPursuitServer
                 {
                     using (StreamWriter writer = new StreamWriter(logFilePath, true))
                     {
-                        writer.WriteLine($"[{Level.Error}] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - Exception: {exception.Message}");
+                        writer.WriteLine($"[{Level.Error}] {DateTime.Now:yyyy-MM-dd HH:mm:ss} - [Exception] {exception.Message}");
                         writer.WriteLine($"Stack Trace: {exception.StackTrace}");
 
                         // Log any inner exceptions recursively

@@ -34,23 +34,24 @@ class ErrorCode(Enum):
     """
     Enum representing errors that can occur during communication.
 
-    Members:
-        NOT_ACK (int): Indicates that the connection was unsuccessful (-1).
-        ACK (int): Connection was successful, but no error was written. Most likely an unhandled crash (0).
-        NATIVE_ERROR (int): Indicates a handled but unspecified exception server-side (1).
-        CLIENT_TIMEOUT (int): Indicates that the server perceives the client as unresponsive. (2).
-        GAME_TIMEOUT (int): Indicates that the game took too long to update (3).
+    Members (int):
+        NOT_ACK: Indicates that the connection was unsuccessful (-1).
+        ACK: Connection was successful, but no error was written. Most likely an unhandled crash (0).
+        NATIVE_ERROR: Indicates a handled but unspecified exception server-side (1).
+        CLIENT_TIMEOUT: Indicates that the server perceives the client as unresponsive. (2).
+        GAME_TIMEOUT: Indicates that the game took too long to update (3).
         UNSUPPORTED_BACKBUFFER_FORMAT (int): Unsupported pixel format (4).
-        UNKNOWN_ACTION (int): An unknown action was sent to the server (5).
+        UNKNOWN_ACTION: An unknown action was sent to the server (5).
+        ENVIRONMENT_NOT_RESET: STEP was called while the environment was either terminated or uninitialized.
     """
-
     NOT_ACK = -1
     ACK = 0
     NATIVE_ERROR = 1
     CLIENT_TIMEOUT = 2
     GAME_TIMEOUT = 3
     UNSUPPORTED_BACKBUFFER_FORMAT = 4
-    UNKNOWN_ACTION = 5
+    UNKNOWN_ACTION = 5,
+    ENVIRONMENT_NOT_RESET = 6
 
 class HighwayPursuitClient:
     """
