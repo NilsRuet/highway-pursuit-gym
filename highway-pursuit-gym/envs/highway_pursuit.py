@@ -31,6 +31,9 @@ class HighwayPursuitEnv(gym.Env):
         self._step = 0
         self._last_rewarded_step = 0
 
+        # render options
+        self._last_observation = None
+
         # gym env members
         self.observation_space = gym.spaces.Box(low=0, high=255, dtype=int, shape=image_shape)
         self.action_space = gym.spaces.MultiBinary(action_count)
@@ -51,12 +54,15 @@ class HighwayPursuitEnv(gym.Env):
         if seed != None:
             warn("A seed was provided, but this env does not support seeding.")
 
-        # Get observation and info
+        # get observation and info
         observation, info = self.client.reset()
 
-        # Manage step count
+        # manage step count
         self._step = 0
         self._last_rewarded_step = 0
+
+        # update state
+        self._last_observation = observation
 
         return observation, info
 
@@ -86,6 +92,9 @@ class HighwayPursuitEnv(gym.Env):
         if(self._step - self._last_rewarded_step > self.no_reward_timeout):
             truncated = True
 
+        # update state
+        self._last_observation = observation
+
         return observation, reward, terminated, truncated, info
 
     def render(self):
@@ -93,11 +102,7 @@ class HighwayPursuitEnv(gym.Env):
         Renders the current state of the environment. 
         """
         if self.render_mode == "rgb_array":
-            return self._render_frame()
-
-    def _render_frame(self):
-        pass
-        # TODO: render_mode rgb_array
+            return self._last_observation
 
     def close(self):
         """
