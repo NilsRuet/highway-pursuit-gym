@@ -24,7 +24,7 @@ def main():
     for _ in range(episode_count):
         t0 = time.time()
         observation, info = env.reset()
-        print(f"tps: {info.tps}, memory: {info.memory}")
+        print(f"tps: {info.tps:.1f}, memory: {info.memory}Mb")
         record_step(0, observation)
 
         done = False
@@ -36,8 +36,6 @@ def main():
             done = truncated or terminated
             step_count += 1
             record_step(step_count, observation)
-
-        print(f"{step_count / (time.time() - t0)} steps/s")
 
     env.close()
 

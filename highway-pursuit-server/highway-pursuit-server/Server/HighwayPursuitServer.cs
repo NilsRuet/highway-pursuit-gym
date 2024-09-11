@@ -17,7 +17,8 @@ namespace HighwayPursuitServer.Server
         private readonly float TICKS_PER_MS = Stopwatch.Frequency / 1000.0f;
         const long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
         const int GAME_TIMEOUT = 2000; // results in an error if the game fails to update
-        const int LOG_PERIOD = 60 * 60; // update metrics every minute of gameplay
+        const int METRICS_UPDATE_FREQUENCY = 60 * 60; // update info every minute of gameplay
+        const int LOG_FREQUENCY = 60 * 60; // update metrics every minute of gameplay
 
         // Instance members
         private readonly ServerOptions _options; // Game options
@@ -38,6 +39,7 @@ namespace HighwayPursuitServer.Server
         private bool _serverTerminated = false;
         private long _totalSteps;
         private Termination _lastStepTermination = new Termination(false, false);
+        private Info _currentInfo;
         private long startTick; // used to measure performance
 
 
@@ -83,7 +85,10 @@ namespace HighwayPursuitServer.Server
                 // Setup the communication
                 _communicationManager.Connect(serverInfo);
 
+                // For performance metrics
                 startTick = Environment.TickCount;
+
+                // Main request/response loop
                 while (!_serverTerminated)
                 {
                     _communicationManager.ExecuteOnInstruction(HandleInstruction);
@@ -171,6 +176,9 @@ namespace HighwayPursuitServer.Server
             {
                 // New game is called on the first episode because it fully resets the game state
                 _episodeService.NewGame();
+                // Initialize the metrics
+                _currentInfo = new Info(0.0f, ComputeMemoryUsage());
+                
                 _firstEpisodeInitialized = true;
             }
             // Respawn the player if last step has not done it naturally (if the client called reset without waiting for termination/truncation)
@@ -178,7 +186,6 @@ namespace HighwayPursuitServer.Server
             {
                 _episodeService.NewLife();
             }
-            // Reset last termination
 
             // Wait for one frame for the rendering buffer to update
             WaitGameUpdate();
@@ -186,9 +193,9 @@ namespace HighwayPursuitServer.Server
             // Update step variables
             _lastStepTermination = new Termination(false, false);
 
-            // Transfer state/info
+            // Return state/info
             _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
-            _communicationManager.WriteInfoBuffer(new Info(1.0f, 2.0f));
+            _communicationManager.WriteInfoBuffer(_currentInfo);
         }
 
         // Fast game update
@@ -250,28 +257,46 @@ namespace HighwayPursuitServer.Server
             _lastStepTermination = new Termination(terminated: terminated, truncated: false);
             _communicationManager.WriteTerminationBuffer(_lastStepTermination);
 
+            // Handle the computation of useful metrics
+            HandleMetrics();
+            _communicationManager.WriteInfoBuffer(_currentInfo);
+
+            // Logs for debugging/troubleshooting
             HandleLogs();
         }
 
-
-        // Tracks some useful metrics for debugging
-        private void HandleLogs()
+        private void HandleMetrics()
         {
             // Performance metrics
-            if (_totalSteps % LOG_PERIOD == 0)
+            if (_totalSteps % METRICS_UPDATE_FREQUENCY == 0)
             {
                 long elapsedTicks = Environment.TickCount - startTick;
-                var tps = ((float)LOG_PERIOD) / (elapsedTicks / 1000.0);
-                var ratio = tps / 60.0;
+                var tps = LOG_FREQUENCY / (elapsedTicks / 1000.0f); // milliseconds to seconds
 
-                double memorySize = 0;
-                using (Process proc = Process.GetCurrentProcess())
-                {
-                    memorySize = proc.PrivateMemorySize64 / (1024.0 * 1024.0);
-                }
+                float memorySize = ComputeMemoryUsage();
+                _currentInfo = new Info(tps, memorySize);
 
-                Logger.Log($"step {_totalSteps} -> {tps:0} ticks/s = x{ratio:0.#} | RAM:{memorySize:0.##}Mb", Logger.Level.Debug);
                 startTick = Environment.TickCount;
+            }
+        }
+
+        private float ComputeMemoryUsage()
+        {
+            float memorySize = 0f;
+            using (Process proc = Process.GetCurrentProcess())
+            {
+                memorySize = proc.PrivateMemorySize64 / (1024.0f * 1024.0f); // bytes to megabytes
+            }
+            return memorySize;
+        }
+
+        // Tracks some useful info for debugging
+        private void HandleLogs()
+        {
+            if (_totalSteps % METRICS_UPDATE_FREQUENCY == 0)
+            {
+                var ratio = _currentInfo.tps / FPS;
+                Logger.Log($"step {_totalSteps} -> {_currentInfo.tps:0} ticks/s = x{ratio:0.#} | RAM:{_currentInfo.memory:0.##}Mb", Logger.Level.Debug);
             }
         }
     }
