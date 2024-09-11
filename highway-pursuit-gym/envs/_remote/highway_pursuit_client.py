@@ -61,34 +61,28 @@ class HighwayPursuitClient:
 
     SERVER_TIMEOUT = 10000 # timeout in ms
 
-    def __init__(self, launcher_path, highway_pursuit_path, dll_path, is_real_time = False, frameskip = 4, log_dir = None):
+    def __init__(self, launcher_path, highway_pursuit_path, dll_path, options):
         """
-        Initializes the client paths for the launcher, highway pursuit, and the injected DLL.
+        Initializes the env.
 
         Args:
             launcher_path (str): Path to the launcher executable.
             highway_pursuit_path (str): Path to the highway pursuit executable.
-            dll_path (str): Path to the DLL file.
-            is_real_time (bool, optional): If highway pursuit runs in real time. Defaults to False.
-            frameskip (int, optional): the number of frames to repeat an action for. Defaults to 4.
-            log_dir (str, optional): Directory for storing logs. If not provided, defaults to a 'logs' folder in the same directory as the DLL path.
-        """
+            dll_path (str): Path to the server DLL file.
+            options (dict): dict with env options
+                - is_real_time (bool): If highway pursuit runs in real time. Defaults to False.
+                - frameskip (int): the number of frames to repeat an action for. Defaults to 4.
+                - log_dir (str): Directory for storing server logs. If not provided, defaults to a 'logs' folder in the same directory as the DLL path.
+        """       
         
         # App and serv dll paths
         self._launcher_path = os.path.abspath(launcher_path)
         self._highway_pursuit_path = os.path.abspath(highway_pursuit_path)
         self._dll_path = os.path.abspath(dll_path)
 
-        # Log directory
-        if log_dir == None:
-            self._log_dir = os.path.join(os.path.abspath(os.path.dirname(dll_path)), 'logs')
-        else:
-            self._log_dir = log_dir
+        # options
+        self._options = options
 
-        # Server options
-        self._is_real_time = is_real_time
-        self._frameskip = frameskip
-        
         # Handles for shared memory sections
         self._shared_memory_handles = []
 
@@ -126,9 +120,9 @@ class HighwayPursuitClient:
             self._launcher_path,
             self._highway_pursuit_path,
             self._dll_path,
-            str(self._is_real_time),
-            str(self._frameskip),
-            self._log_dir,
+            str(self._options["real_time"]),
+            str(self._options["frameskip"]),
+            self._options["log_dir"],
             self._app_resources_id
         ]
 

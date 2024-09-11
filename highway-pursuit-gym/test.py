@@ -8,19 +8,23 @@ def main():
     launcher_path = "..\\highway-pursuit-server\\highway-pursuit-launcher\\bin\\Debug\\HighwayPursuitLauncher.exe"
     dll_path = "..\\highway-pursuit-server\\highway-pursuit-server\\bin\\Debug\\HighwayPursuitServer.dll"
     app_path = "C:\\Program Files (x86)\\HighwayPursuit\\HighwayPursuit.exe"
-    real_time = False
-    frameskip = 4
 
     images = []
     max_images = 50
     image_skip = 20
     def record_step(step, img):
-        if(len(images) < max_images and step % image_skip == 0):
+        if(len(images) < max_images and (step % image_skip) == 0):
             images.append(img) 
 
     log_dir = os.path.join(os.getcwd(), "logs") 
-    env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=real_time, frameskip=frameskip, log_dir=log_dir)
-    env = NoRewardTimeoutWrapper(env, timeout=(60*45) / frameskip)
+    options = HighwayPursuitEnv.get_default_options()
+    options["real_time"] = False
+    options["frameskip"] = 4
+    options["max_memory_usage"] = 50.0
+    options["log_dir"] = log_dir
+
+    env = HighwayPursuitEnv(launcher_path, app_path, dll_path, options=options)
+    env = NoRewardTimeoutWrapper(env, timeout=(60*45) / options["frameskip"])
 
     episode_count = 3
     for _ in range(episode_count):
