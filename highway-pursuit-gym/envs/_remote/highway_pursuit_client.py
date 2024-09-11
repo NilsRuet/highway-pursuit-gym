@@ -202,7 +202,9 @@ class HighwayPursuitClient:
         Requests to reset the environment, waits for the server and retrieves the initial observation.
 
         Returns:
-            observation (array-like): The initial observation after the reset.
+            tuple: A tuple containing:
+                - observation (array-like): The initial observation after the reset.
+                - info (dict): Additional environment information.
         """
         
         # Query

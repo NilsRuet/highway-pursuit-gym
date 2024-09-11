@@ -30,11 +30,6 @@ namespace HighwayPursuitServer.Injected
             Respawn(0x1);
         }
 
-        public void Truncate()
-        {
-            NewLife();
-        }
-
         public bool PullTerminated()
         {
             var res = _terminated;

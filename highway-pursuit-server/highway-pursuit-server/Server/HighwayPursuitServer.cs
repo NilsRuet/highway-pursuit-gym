@@ -17,8 +17,8 @@ namespace HighwayPursuitServer.Server
         private readonly float TICKS_PER_MS = Stopwatch.Frequency / 1000.0f;
         const long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
         const int GAME_TIMEOUT = 2000; // results in an error if the game fails to update
-        const int NO_REWARD_TIMEOUT = 60 * 45; // No rewards for 45 seconds result in a reset (softlock safeguard)
         const int LOG_PERIOD = 60 * 60; // update metrics every minute of gameplay
+
         // Instance members
         private readonly ServerOptions _options; // Game options
 
@@ -36,9 +36,7 @@ namespace HighwayPursuitServer.Server
 
         private bool _firstEpisodeInitialized = false;
         private bool _serverTerminated = false;
-        private long _step; // current step
         private long _totalSteps;
-        private long _lastRewardedStep; // last step where reward wasn't zero
         private Termination _lastStepTermination = new Termination(false, false);
         private long startTick; // used to measure performance
 
@@ -186,8 +184,6 @@ namespace HighwayPursuitServer.Server
             WaitGameUpdate();
 
             // Update step variables
-            _step = 0;
-            _lastRewardedStep = 0;
             _lastStepTermination = new Termination(false, false);
 
             // Transfer state/info
@@ -243,28 +239,15 @@ namespace HighwayPursuitServer.Server
             // Get reward
             var reward = _scoreService.PullReward();
             _communicationManager.WriteRewardBuffer(new Reward(reward));
-            if (reward != 0)
-            {
-                _lastRewardedStep = _step;
-            }
 
             // Next step
             _updateService.UpdateTime();
-            _step++;
             _totalSteps++;
-
-            // Truncation : safeguard against softlocks
-            bool truncated = false;
-            if (_step - _lastRewardedStep > NO_REWARD_TIMEOUT)
-            {
-                truncated = true;
-                _episodeService.Truncate();
-            }
 
             // Check termination (death)
             bool terminated = _episodeService.PullTerminated();
 
-            _lastStepTermination = new Termination(terminated: terminated, truncated: truncated);
+            _lastStepTermination = new Termination(terminated: terminated, truncated: false);
             _communicationManager.WriteTerminationBuffer(_lastStepTermination);
 
             HandleLogs();
