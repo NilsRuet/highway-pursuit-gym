@@ -10,7 +10,7 @@ class HighwayPursuitEnv(gym.Env):
     """
     metadata = {"render_modes": ["rgb_array"], "render_fps": 12}
 
-    def __init__(self, launcher_path, highway_pursuit_path, dll_path, render_mode=None, real_time=False, log_dir=None, no_reward_timeout = 60 * 45):
+    def __init__(self, launcher_path, highway_pursuit_path, dll_path, render_mode=None, real_time=False, frameskip=4, log_dir=None, no_reward_timeout = 60 * 45):
         """
         Initializes the env.
 
@@ -19,20 +19,22 @@ class HighwayPursuitEnv(gym.Env):
             highway_pursuit_path (str): Path to the highway pursuit executable.
             dll_path (str): Path to the server DLL file.
             is_real_time (bool, optional): If highway pursuit runs in real time. Defaults to False.
+            frameskip (int, optional): the number of frames to repeat an action for. Defaults to 4.
             log_dir (str, optional): Directory for storing logs. If not provided, defaults to a 'logs' folder in the same directory as the DLL path.
-            no_reward_timeout (int, optional): Duration for which not receiving rewards truncates the episode
+            no_reward_timeout (int, optional): Duration in frames (not steps) for which not receiving rewards truncates the episode
         """
         # Create process, get observation/action format
-        self.client = HighwayPursuitClient(launcher_path, highway_pursuit_path, dll_path, real_time, log_dir)
+        self.client = HighwayPursuitClient(launcher_path, highway_pursuit_path, dll_path, real_time, frameskip, log_dir)
         image_shape, action_count = self.client.create_process_and_connect()
         
         # local env options
+        self._frameskip = frameskip
         self._no_reward_timeout = no_reward_timeout
-        self._step = 0
-        self._last_rewarded_step = 0
+        self._frame = 0
+        self._last_rewarded_frame = 0
 
         # render options
-        self._last_frame = None
+        self._last_observation = None
 
         # gym env members
         self.observation_space = gym.spaces.Box(low=0, high=255, dtype=int, shape=image_shape)
@@ -58,11 +60,11 @@ class HighwayPursuitEnv(gym.Env):
         observation, info = self.client.reset()
 
         # manage step count
-        self._step = 0
-        self._last_rewarded_step = 0
+        self._frame = 0
+        self._last_rewarded_frame = 0
 
         # update state
-        self._last_frame = observation
+        self._last_observation = observation
 
         return observation, info
 
@@ -83,16 +85,16 @@ class HighwayPursuitEnv(gym.Env):
         """
         
         observation, reward, terminated, truncated, info = self.client.step(action)
-        self._step += 1
+        self._frame += self._frameskip
 
         # handle truncation
         if(reward != 0):
-            self._last_rewarded_step = self._step
-        if(self._step - self._last_rewarded_step > self._no_reward_timeout):
+            self._last_rewarded_frame = self._frame
+        if(self._frame - self._last_rewarded_frame > self._no_reward_timeout):
             truncated = True
 
         # update state
-        self._last_frame = observation
+        self._last_observation = observation
 
         return observation, reward, terminated, truncated, info
 
@@ -101,7 +103,7 @@ class HighwayPursuitEnv(gym.Env):
         Renders the current state of the environment. 
         """
         if self.render_mode == "rgb_array":
-            return self._last_frame
+            return self._last_observation
 
     def close(self):
         """

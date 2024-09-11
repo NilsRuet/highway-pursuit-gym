@@ -15,11 +15,10 @@ namespace HighwayPursuitLauncher
         const int ARG_EXE = 0;
         const int ARG_DLL = 1;
         const int ARG_REAL_TIME = 2;
-        const int ARG_LOG_DIR_PATH = 3;
-        const int ARG_SHARED_RESOURCES_PREFIX = 4;
-        const int TOTAL_ARGS = 5;
-
-        const int SERVER_ARGS_OFFSET = 2;
+        const int ARG_FRAME_SKIP = 3;
+        const int ARG_LOG_DIR_PATH = 4;
+        const int ARG_SHARED_RESOURCES_PREFIX = 5;
+        const int TOTAL_ARGS = 6;
 
         enum ExitCode : int
         {
@@ -37,14 +36,20 @@ namespace HighwayPursuitLauncher
 
             try
             {
-                var success = bool.TryParse(args[SERVER_ARGS_OFFSET+0], out bool isRealTime);
+                var success = bool.TryParse(args[ARG_REAL_TIME], out bool isRealTime);
                 if (!success)
                 {
                     isRealTime = false;
                 }
 
+                if(!int.TryParse(args[ARG_FRAME_SKIP], out int frameskip) || frameskip < 1)
+                {
+                    frameskip = 1;
+                }
+
                 var options = new ServerOptions(
                     isRealTime,
+                    frameskip,
                     args[ARG_LOG_DIR_PATH],
                     args[ARG_SHARED_RESOURCES_PREFIX]
                 );
@@ -92,6 +97,11 @@ namespace HighwayPursuitLauncher
             }
 
             if (string.IsNullOrEmpty(args[ARG_REAL_TIME]))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(args[ARG_FRAME_SKIP]))
             {
                 return false;
             }

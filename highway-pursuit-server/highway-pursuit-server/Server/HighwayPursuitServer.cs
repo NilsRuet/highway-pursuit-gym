@@ -37,7 +37,7 @@ namespace HighwayPursuitServer.Server
 
         private bool _firstEpisodeInitialized = false;
         private bool _serverTerminated = false;
-        private long _totalSteps;
+        private long _totalEllapsedFrames;
         private Termination _lastStepTermination = new Termination(false, false);
         private Info _currentInfo;
         private long startTick; // used to measure performance
@@ -150,11 +150,11 @@ namespace HighwayPursuitServer.Server
                     // Step at max speed or real time depending on the option
                     if (_options.isRealTime)
                     {
-                        StepRealTime();
+                        Step(frameWrapper: ExecuteForOneFrame);
                     }
                     else
                     {
-                        StepSkipTime();
+                        Step();
                     }
                     break;
                 case InstructionCode.CLOSE:
@@ -198,18 +198,12 @@ namespace HighwayPursuitServer.Server
             _communicationManager.WriteInfoBuffer(_currentInfo);
         }
 
-        // Fast game update
-        private void StepSkipTime()
-        {
-            Step();
-        }
-
         // Game update that is lengthened to last one frame of the specified FPS
-        private void StepRealTime()
+        private void ExecuteForOneFrame(Action action)
         {
             Stopwatch stopwatch = Stopwatch.StartNew();
-            Step();
-            double sleepTime = (TICKS_PER_FRAME - stopwatch.ElapsedTicks) / TICKS_PER_MS;
+            action();
+            double sleepTime = ((TICKS_PER_FRAME) - stopwatch.ElapsedTicks) / TICKS_PER_MS;
             const int sleepToleranceMillisecond = 1;
             if (sleepTime > 0)
             {
@@ -225,50 +219,71 @@ namespace HighwayPursuitServer.Server
             }
             else
             {
-                Logger.Log("Game update took longer than one frame.", Logger.Level.Warning);
+                Logger.Log("Step took longer that the intended number of frames.", Logger.Level.Warning);
             }
             stopwatch.Stop();
         }
 
         // Frame code
-        private void Step()
+        private void Step(Action<Action> frameWrapper = null)
         {
             // Get action
             List<Input> actions = _communicationManager.ReadActions();
-            _inputService.SetInput(actions);
 
-            // Apply action and get next state
-            WaitGameUpdate();
+            // Repeat action for _options.frameskip frames. Return early if episode ends.
+            int cumulatedReward = 0;
+            int skippedFrames = 0;
 
-            // Get game state
+            void processOneFrame()
+            {
+                _inputService.SetInput(actions);
+                // Apply action and get next state
+                WaitGameUpdate();
+
+                // Get reward
+                var reward = _scoreService.PullReward();
+                cumulatedReward += reward;
+
+                // Next step
+                _updateService.UpdateTime();
+                _totalEllapsedFrames++;
+
+                // Check termination (death)
+                bool terminated = _episodeService.PullTerminated();
+                _lastStepTermination = new Termination(terminated: terminated, truncated: false);
+
+                // Handle the computation of useful metrics
+                HandleMetrics();
+
+                // Logs for debugging/troubleshooting
+                HandleLogs();
+
+                skippedFrames++;
+            }
+
+            while (skippedFrames < _options.frameskip && !_lastStepTermination.IsDone())
+            {
+                // Wrapper is here for the real time option
+                if(frameWrapper == null)
+                {
+                    processOneFrame();
+                } else
+                {
+                    frameWrapper(processOneFrame);
+                }
+            }
+
+            // Write return values
             _direct3D8Service.Screenshot(_communicationManager.WriteObservationBuffer);
-
-            // Get reward
-            var reward = _scoreService.PullReward();
-            _communicationManager.WriteRewardBuffer(new Reward(reward));
-
-            // Next step
-            _updateService.UpdateTime();
-            _totalSteps++;
-
-            // Check termination (death)
-            bool terminated = _episodeService.PullTerminated();
-
-            _lastStepTermination = new Termination(terminated: terminated, truncated: false);
-            _communicationManager.WriteTerminationBuffer(_lastStepTermination);
-
-            // Handle the computation of useful metrics
-            HandleMetrics();
+            _communicationManager.WriteRewardBuffer(new Reward(cumulatedReward));
             _communicationManager.WriteInfoBuffer(_currentInfo);
-
-            // Logs for debugging/troubleshooting
-            HandleLogs();
+            _communicationManager.WriteTerminationBuffer(_lastStepTermination);
         }
 
         private void HandleMetrics()
         {
             // Performance metrics
-            if (_totalSteps % METRICS_UPDATE_FREQUENCY == 0)
+            if (_totalEllapsedFrames % METRICS_UPDATE_FREQUENCY == 0)
             {
                 long elapsedTicks = Environment.TickCount - startTick;
                 var tps = LOG_FREQUENCY / (elapsedTicks / 1000.0f); // milliseconds to seconds
@@ -293,10 +308,10 @@ namespace HighwayPursuitServer.Server
         // Tracks some useful info for debugging
         private void HandleLogs()
         {
-            if (_totalSteps % METRICS_UPDATE_FREQUENCY == 0)
+            if (_totalEllapsedFrames % METRICS_UPDATE_FREQUENCY == 0)
             {
                 var ratio = _currentInfo.tps / FPS;
-                Logger.Log($"step {_totalSteps} -> {_currentInfo.tps:0} ticks/s = x{ratio:0.#} | RAM:{_currentInfo.memory:0.##}Mb", Logger.Level.Debug);
+                Logger.Log($"step {_totalEllapsedFrames} -> {_currentInfo.tps:0} ticks/s = x{ratio:0.#} | RAM:{_currentInfo.memory:0.##}Mb", Logger.Level.Debug);
             }
         }
     }

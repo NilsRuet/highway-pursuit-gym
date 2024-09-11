@@ -21,6 +21,7 @@ namespace HighwayPursuitServer.Data
         private const string terminationMemoryId = "7";
 
         public readonly bool isRealTime;
+        public readonly int frameskip;
         public readonly string logDirectory;
         public readonly string serverMutexName;
         public readonly string clientMutexName;
@@ -33,9 +34,10 @@ namespace HighwayPursuitServer.Data
         public readonly string actionMemoryName;
         public readonly string terminationMemoryName;
 
-        public ServerOptions(bool isRealTime, string logDirectoryPath, string sharedResourcesPrefix)
+        public ServerOptions(bool isRealTime, int frameskip, string logDirectoryPath, string sharedResourcesPrefix)
         {
             this.isRealTime = isRealTime;
+            this.frameskip = frameskip;
             this.logDirectory = logDirectoryPath;
             this.serverMutexName = $"{sharedResourcesPrefix}{serverMutexId}";
             this.clientMutexName = $"{sharedResourcesPrefix}{clientMutexId}";

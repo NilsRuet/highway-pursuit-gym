@@ -61,7 +61,7 @@ class HighwayPursuitClient:
 
     SERVER_TIMEOUT = 10000 # timeout in ms
 
-    def __init__(self, launcher_path, highway_pursuit_path, dll_path, is_real_time = False, log_dir = None):
+    def __init__(self, launcher_path, highway_pursuit_path, dll_path, is_real_time = False, frameskip = 4, log_dir = None):
         """
         Initializes the client paths for the launcher, highway pursuit, and the injected DLL.
 
@@ -70,6 +70,7 @@ class HighwayPursuitClient:
             highway_pursuit_path (str): Path to the highway pursuit executable.
             dll_path (str): Path to the DLL file.
             is_real_time (bool, optional): If highway pursuit runs in real time. Defaults to False.
+            frameskip (int, optional): the number of frames to repeat an action for. Defaults to 4.
             log_dir (str, optional): Directory for storing logs. If not provided, defaults to a 'logs' folder in the same directory as the DLL path.
         """
         
@@ -86,6 +87,7 @@ class HighwayPursuitClient:
 
         # Server options
         self._is_real_time = is_real_time
+        self._frameskip = frameskip
         
         # Handles for shared memory sections
         self._shared_memory_handles = []
@@ -125,6 +127,7 @@ class HighwayPursuitClient:
             self._highway_pursuit_path,
             self._dll_path,
             str(self._is_real_time),
+            str(self._frameskip),
             self._log_dir,
             self._app_resources_id
         ]
