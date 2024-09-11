@@ -31,6 +31,19 @@ class Semaphore():
         return kernel32.CloseHandle(self._semaphore)
 
 class ErrorCode(Enum):
+    """
+    Enum representing errors that can occur during communication.
+
+    Members:
+        NOT_ACK (int): Indicates that the connection was unsuccessful (-1).
+        ACK (int): Connection was successful, but no error was written. Most likely an unhandled crash (0).
+        NATIVE_ERROR (int): Indicates a handled but unspecified exception server-side (1).
+        CLIENT_TIMEOUT (int): Indicates that the server perceives the client as unresponsive. (2).
+        GAME_TIMEOUT (int): Indicates that the game took too long to update (3).
+        UNSUPPORTED_BACKBUFFER_FORMAT (int): Unsupported pixel format (4).
+        UNKNOWN_ACTION (int): An unknown action was sent to the server (5).
+    """
+
     NOT_ACK = -1
     ACK = 0
     NATIVE_ERROR = 1
@@ -40,41 +53,78 @@ class ErrorCode(Enum):
     UNKNOWN_ACTION = 5
 
 class HighwayPursuitClient:
+    """
+    A client class for interacting with the Highway Pursuit server. Manages the communication between the client and the 
+    game environment, including sending actions, receiving observations, and server synchronization.
+    """
+
     SERVER_TIMEOUT = 10000 # timeout in ms
 
     def __init__(self, launcher_path, highway_pursuit_path, dll_path, is_real_time = False, log_dir = None):
-        self.launcher_path = os.path.abspath(launcher_path)
-        self.highway_pursuit_path = os.path.abspath(highway_pursuit_path)
-        self.dll_path = os.path.abspath(dll_path)
+        """
+        Initializes the client paths for the launcher, highway pursuit, and the injected DLL.
 
+        Args:
+            launcher_path (str): Path to the launcher executable.
+            highway_pursuit_path (str): Path to the highway pursuit executable.
+            dll_path (str): Path to the DLL file.
+            is_real_time (bool, optional): If highway pursuit runs in real time. Defaults to False.
+            log_dir (str, optional): Directory for storing logs. If not provided, defaults to a 'logs' folder in the same directory as the DLL path.
+        """
+        
+        # App and serv dll paths
+        self._launcher_path = os.path.abspath(launcher_path)
+        self._highway_pursuit_path = os.path.abspath(highway_pursuit_path)
+        self._dll_path = os.path.abspath(dll_path)
+
+        # Log directory
         if log_dir == None:
-            self.log_dir = os.path.join(os.path.abspath(os.path.dirname(dll_path)), 'logs')
+            self._log_dir = os.path.join(os.path.abspath(os.path.dirname(dll_path)), 'logs')
         else:
-            self.log_dir = log_dir
+            self._log_dir = log_dir
 
-        self.is_real_time = is_real_time
-        self.shared_memory_handles = []
+        # Server options
+        self._is_real_time = is_real_time
+        
+        # Handles for shared memory sections
+        self._shared_memory_handles = []
 
     def _create_shared_memory(self, name, size):
+        """
+        Creates a shared memory segment and appends it to the shared memory handles list.
+        """
+        
         sm = shared_memory.SharedMemory(name=name, size=size, create=True)
-        self.shared_memory_handles.append(sm)
+        self._shared_memory_handles.append(sm)
         return sm
 
     def create_process_and_connect(self):
+        """
+        Connects to and starts the server, and returns the observation shape and action count.
+
+        Returns:
+            tuple: A tuple containing:
+                - observation_shape (tuple): The shape of the observation data.
+                - action_count (int): The number of possible actions.
+        """
+        
         # Generate name for mutex and share memory sections
         self._app_resources_id = f"{str(uuid.uuid1())}-"
         # Setup the server and the data formats
-        self.setup_server()
+        self._setup_server()
         return self.observation_shape, self.action_count
     
     def _start_process(self):
+        """
+        Starts the launcher process.
+        """
         # Define the command and its arguments
         command = [
-            self.launcher_path,
-            self.highway_pursuit_path,
-            self.dll_path,
-            str(self.is_real_time),
-            self.log_dir,
+            self._launcher_path,
+            self._highway_pursuit_path,
+            self._dll_path,
+            str(self._is_real_time),
+            self._log_dir,
             self._app_resources_id
         ]
 
@@ -83,21 +133,29 @@ class HighwayPursuitClient:
         if(result.returncode != 0):
             raise Exception(f"HighwayPursuit launcher failed with code {result.returncode}")
 
-        # TODO: maybe get the PID of the server back such that it can be killed in case it stops responding
+    def _name_from_id(self, id):
+        """
+        Get the shared resource unique name from its id
+        """
+        return f"{self._app_resources_id}{id}"
 
-    def setup_server(self):
+    def _setup_server(self):
+        """
+        Creates the semaphores and shared memory sections for communicating with the server.
+        Handles the connection protocol and returns the server info.
+        """
         # Define shared resources names
-        lock_server_name = f"{self._app_resources_id}{server_mutex_id}"
-        lock_client_name = f"{self._app_resources_id}{client_mutex_id}"
+        lock_server_name = self._name_from_id(server_mutex_id)
+        lock_client_name = self._name_from_id(client_mutex_id)
 
-        return_code_memory_name = f"{self._app_resources_id}{return_code_memory_id}"
-        server_info_memory_name = f"{self._app_resources_id}{server_info_memory_id}"
-        instruction_memory_name = f"{self._app_resources_id}{instruction_memory_id}"
-        observation_memory_name = f"{self._app_resources_id}{observation_memory_id}"
-        info_memory_name = f"{self._app_resources_id}{info_memory_id}"
-        reward_memory_name = f"{self._app_resources_id}{reward_memory_id}" 
-        action_memory_name = f"{self._app_resources_id}{action_memory_id}" 
-        termination_memory_name = f"{self._app_resources_id}{termination_memory_id}" 
+        return_code_memory_name = self._name_from_id(return_code_memory_id)
+        server_info_memory_name = self._name_from_id(server_info_memory_id)
+        instruction_memory_name = self._name_from_id(instruction_memory_id)
+        observation_memory_name = self._name_from_id(observation_memory_id)
+        info_memory_name = self._name_from_id(info_memory_id)
+        reward_memory_name = self._name_from_id(reward_memory_id)
+        action_memory_name = self._name_from_id(action_memory_id) 
+        termination_memory_name = self._name_from_id(termination_memory_id)
 
         # Create semaphores for synchronization
         # Initially no availability
@@ -139,6 +197,13 @@ class HighwayPursuitClient:
         self._sync_wait_for_serv()
 
     def reset(self):
+        """
+        Requests to reset the environment, waits for the server and retrieves the initial observation.
+
+        Returns:
+            observation (array-like): The initial observation after the reset.
+        """
+        
         # Query
         self._write_instruction(Instruction(Instruction.RESET))
         self._sync_wait_for_serv()
@@ -150,6 +215,20 @@ class HighwayPursuitClient:
         return observation, info
 
     def step(self, action):
+        """
+        Performs one step in the environment by sending the given action to the server, retrieves the reward and next observation.
+
+        Args:
+            action (any): The action to take in the environment.
+
+        Returns:
+            tuple: A tuple containing:
+                - observation (array-like): The observation after the step.
+                - reward (float): The reward received after the action.
+                - terminated (bool): Whether the episode has terminated.
+                - truncated (bool): Whether the episode has been truncated.
+                - info (dict): Additional environment information.
+        """
         self._write_action(action)
         self._write_instruction(Instruction(Instruction.STEP))
         self._sync_wait_for_serv()
@@ -162,37 +241,54 @@ class HighwayPursuitClient:
         return observation, reward, termination.terminated, termination.truncated, info
 
     def _read_observation(self):
+        """
+        Retrieves an observation from the shared memory buffer
+        """
         array = np.ndarray(self.observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf)
         array.flags.writeable = False
         return np.copy(array)[:, :, :3]
 
     def close(self):
+        """
+        Closes the environment, and cleans up shared memory resources and locks.
+        This method ensures that all shared resources are properly released and unlinked.
+        """
+         
         # Write the close instruction to the instruction buffer
         self._write_instruction(Instruction(Instruction.CLOSE))
         self._sync_wait_for_serv()
 
         # At this point, the server shouldn't use any shared resource
         # Clean up everything
-        for sm in self.shared_memory_handles:
+        for sm in self._shared_memory_handles:
             sm.close()
 
-        for sm in self.shared_memory_handles:
+        for sm in self._shared_memory_handles:
             sm.unlink()
 
         self._lock_client_pool.close()
         self._lock_server_pool.close()
 
     def _write_action(self, action: np.ndarray):
+        """
+        Writes the given action to the shared memory buffer.
+        """
         # Write an action in the appropriate buffer
         bytes = bytearray(action)
         self._action_sm.buf[:len(bytes)] = bytes
 
     def _write_instruction(self, instruction: Instruction):
+        """
+        Writes the given instruction  to the shared memory buffer.
+        """
         # Write an instruction in the appropriate buffer
         bytes = bytearray(instruction)
         self._instruction_sm.buf[:len(bytes)] = bytes
 
     def _sync_wait_for_serv(self):
+        """
+        Waits for the server to process the instruction in shared memory.
+        """
         self._lock_server_pool.release()
         wait_result = self._lock_client_pool.acquire(HighwayPursuitClient.SERVER_TIMEOUT)
         
@@ -203,5 +299,8 @@ class HighwayPursuitClient:
             raise Exception(message)
 
     def _get_error(self):
+        """
+        Retrieves the error code from the shared memory buffer.
+        """
         return_code = ReturnCode.from_buffer_copy(self._return_code_sm.buf)
         return return_code.code
