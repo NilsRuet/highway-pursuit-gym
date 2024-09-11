@@ -10,7 +10,7 @@ class HighwayPursuitEnv(gym.Env):
     """
     metadata = {"render_modes": ["rgb_array"], "render_fps": 12}
 
-    def __init__(self, launcher_path, highway_pursuit_path, dll_path, render_mode=None, real_time=False, frameskip=4, log_dir=None, no_reward_timeout = 60 * 45):
+    def __init__(self, launcher_path, highway_pursuit_path, dll_path, render_mode=None, real_time=False, frameskip=4, log_dir=None):
         """
         Initializes the env.
 
@@ -29,9 +29,6 @@ class HighwayPursuitEnv(gym.Env):
         
         # local env options
         self._frameskip = frameskip
-        self._no_reward_timeout = no_reward_timeout
-        self._frame = 0
-        self._last_rewarded_frame = 0
 
         # render options
         self._last_observation = None
@@ -59,10 +56,6 @@ class HighwayPursuitEnv(gym.Env):
         # get observation and info
         observation, info = self.client.reset()
 
-        # manage step count
-        self._frame = 0
-        self._last_rewarded_frame = 0
-
         # update state
         self._last_observation = observation
 
@@ -85,13 +78,6 @@ class HighwayPursuitEnv(gym.Env):
         """
         
         observation, reward, terminated, truncated, info = self.client.step(action)
-        self._frame += self._frameskip
-
-        # handle truncation
-        if(reward != 0):
-            self._last_rewarded_frame = self._frame
-        if(self._frame - self._last_rewarded_frame > self._no_reward_timeout):
-            truncated = True
 
         # update state
         self._last_observation = observation

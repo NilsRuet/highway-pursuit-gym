@@ -1,13 +1,15 @@
 import numpy as np
 from envs import HighwayPursuitEnv
+from wrappers import NoRewardTimeoutWrapper
 import matplotlib.pyplot as plt
-import time
 import os
 
 def main():
     launcher_path = "..\\highway-pursuit-server\\highway-pursuit-launcher\\bin\\Debug\\HighwayPursuitLauncher.exe"
     dll_path = "..\\highway-pursuit-server\\highway-pursuit-server\\bin\\Debug\\HighwayPursuitServer.dll"
     app_path = "C:\\Program Files (x86)\\HighwayPursuit\\HighwayPursuit.exe"
+    real_time = False
+    frameskip = 4
 
     images = []
     max_images = 50
@@ -17,11 +19,11 @@ def main():
             images.append(img) 
 
     log_dir = os.path.join(os.getcwd(), "logs") 
-    env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=False, frameskip=4, log_dir=log_dir)
+    env = HighwayPursuitEnv(launcher_path, app_path, dll_path, real_time=real_time, frameskip=frameskip, log_dir=log_dir)
+    env = NoRewardTimeoutWrapper(env, timeout=(60*45) / frameskip)
 
     episode_count = 3
     for _ in range(episode_count):
-        t0 = time.time()
         observation, info = env.reset()
         print(info)
         record_step(0, observation)
