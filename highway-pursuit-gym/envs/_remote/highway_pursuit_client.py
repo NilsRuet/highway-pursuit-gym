@@ -301,7 +301,7 @@ class HighwayPursuitClient:
         has_server_timed_out = (wait_result != 0)
         error_code = self._get_error()
         if(has_server_timed_out or error_code != ErrorCode.ACK.value):
-            message = f"Server error: {'TIMEOUT | ' if has_server_timed_out else ''}{ErrorCode(error_code).name}"
+            message = f"server error - {'TIMEOUT | ' if has_server_timed_out else ''}{ErrorCode(error_code).name}"
             raise Exception(message)
 
     def _get_error(self):
