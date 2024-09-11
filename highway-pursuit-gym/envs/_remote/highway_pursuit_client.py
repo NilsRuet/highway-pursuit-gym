@@ -215,7 +215,7 @@ class HighwayPursuitClient:
         # The copy allow unlinking the data
         observation = self._read_observation()
 
-        return observation, info
+        return observation, info.to_dict()
 
     def step(self, action):
         """
@@ -241,7 +241,7 @@ class HighwayPursuitClient:
         reward: Reward = Reward.from_buffer_copy(self._reward_sm.buf)
         info: Info = Info.from_buffer_copy(self._info_sm.buf)
         termination: Termination = Termination.from_buffer_copy(self._termination_sm.buf)
-        return observation, reward, termination.terminated, termination.truncated, info
+        return observation, reward.reward, termination.terminated, termination.truncated, info.to_dict()
 
     def _read_observation(self):
         """

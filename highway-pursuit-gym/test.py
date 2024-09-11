@@ -24,7 +24,7 @@ def main():
     for _ in range(episode_count):
         t0 = time.time()
         observation, info = env.reset()
-        print(f"tps: {info.tps:.1f}, memory: {info.memory}Mb")
+        print(info)
         record_step(0, observation)
 
         done = False

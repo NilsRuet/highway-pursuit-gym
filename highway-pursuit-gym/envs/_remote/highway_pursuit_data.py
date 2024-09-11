@@ -23,6 +23,12 @@ class Info(ctypes.Structure):
         ('memory', ctypes.c_float),
     )
 
+    def to_dict(self):
+        return {
+                "tps": self.tps,
+                "memory_usage": self.memory
+            }
+
 class Reward(ctypes.Structure):
     _fields_ = (
         ('reward', ctypes.c_float),

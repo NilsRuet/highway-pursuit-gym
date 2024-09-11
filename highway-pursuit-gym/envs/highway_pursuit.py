@@ -27,12 +27,12 @@ class HighwayPursuitEnv(gym.Env):
         image_shape, action_count = self.client.create_process_and_connect()
         
         # local env options
-        self.no_reward_timeout = no_reward_timeout
+        self._no_reward_timeout = no_reward_timeout
         self._step = 0
         self._last_rewarded_step = 0
 
         # render options
-        self._last_observation = None
+        self._last_frame = None
 
         # gym env members
         self.observation_space = gym.spaces.Box(low=0, high=255, dtype=int, shape=image_shape)
@@ -62,7 +62,7 @@ class HighwayPursuitEnv(gym.Env):
         self._last_rewarded_step = 0
 
         # update state
-        self._last_observation = observation
+        self._last_frame = observation
 
         return observation, info
 
@@ -88,12 +88,11 @@ class HighwayPursuitEnv(gym.Env):
         # handle truncation
         if(reward != 0):
             self._last_rewarded_step = self._step
-
-        if(self._step - self._last_rewarded_step > self.no_reward_timeout):
+        if(self._step - self._last_rewarded_step > self._no_reward_timeout):
             truncated = True
 
         # update state
-        self._last_observation = observation
+        self._last_frame = observation
 
         return observation, reward, terminated, truncated, info
 
@@ -102,7 +101,7 @@ class HighwayPursuitEnv(gym.Env):
         Renders the current state of the environment. 
         """
         if self.render_mode == "rgb_array":
-            return self._last_observation
+            return self._last_frame
 
     def close(self):
         """
