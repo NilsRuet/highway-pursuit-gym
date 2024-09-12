@@ -151,6 +151,11 @@ namespace HighwayPursuitServer.Injected
             IDirect3DDevice8.Reset = Marshal.GetDelegateForFunctionPointer<Reset_delegate>(resetDevicePtr);
             _hookManager.RegisterHook(resetDevicePtr, new Reset_delegate(Reset_Hook));
 
+            // Present
+            IntPtr presentPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.PRESENT_OFFSET);
+            IDirect3DDevice8.Present = Marshal.GetDelegateForFunctionPointer<Present_delegate>(presentPtr);
+            _hookManager.RegisterHook(presentPtr, new Present_delegate(Present_Hook));
+
             // Get display mode
             IntPtr getDisplayModePtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.GET_DISPLAY_MODE_OFFSET);
             IDirect3DDevice8.GetDisplayMode = Marshal.GetDelegateForFunctionPointer<GetDisplayMode_delegate>(getDisplayModePtr);
@@ -206,18 +211,25 @@ namespace HighwayPursuitServer.Injected
             }
         }
 
-        uint CreateDevice_Hook(IntPtr d3d8Interface, uint adapter, D3DDEVTYPE deviceType, IntPtr hFocusWindow, uint behaviorFlags, ref D3DPRESENT_PARAMETERS pPresentationParameters, ref IntPtr ppReturnedDeviceInterface)
+        private uint CreateDevice_Hook(IntPtr d3d8Interface, uint adapter, D3DDEVTYPE deviceType, IntPtr hFocusWindow, uint behaviorFlags, ref D3DPRESENT_PARAMETERS pPresentationParameters, ref IntPtr ppReturnedDeviceInterface)
         {
             // Make back buffer lockable for pixel capture
-
             const uint D3DPRESENTFLAG_LOCKABLE_BACKBUFFER = 0x00000001;
             pPresentationParameters.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
             return IDirect3D8.CreateDevice(d3d8Interface, adapter, deviceType, hFocusWindow, behaviorFlags, ref pPresentationParameters, ref ppReturnedDeviceInterface);
         }
 
-        uint Reset_Hook(IntPtr pDevice, ref D3DPRESENT_PARAMETERS pPresentationParameters)
+        private uint Reset_Hook(IntPtr pDevice, ref D3DPRESENT_PARAMETERS pPresentationParameters)
         {
+            // Make back buffer lockable for pixel capture
+            const uint D3DPRESENTFLAG_LOCKABLE_BACKBUFFER = 0x00000001;
+            pPresentationParameters.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
             return IDirect3DDevice8.Reset(pDevice, ref pPresentationParameters);
+        }
+
+        private uint Present_Hook(IntPtr pDevice, IntPtr pSourceRect, IntPtr pDestRec, uint hDestWindowOverride, IntPtr pDirtyRegion)
+        {
+            return IDirect3DDevice8.Present(pDevice, pSourceRect, pDestRec, hDestWindowOverride, pDirtyRegion);
         }
 
         #endregion
@@ -235,6 +247,7 @@ namespace HighwayPursuitServer.Injected
         {
             public static Reset_delegate Reset;
             public static GetDisplayMode_delegate GetDisplayMode;
+            public static Present_delegate Present;
             public static CreateImageSurface_delegate CreateImageSurface;
             public static GetBackBuffer_delegate GetBackBuffer;
             public static CopyRects_delegate CopyRects;
@@ -266,6 +279,10 @@ namespace HighwayPursuitServer.Injected
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
         delegate uint GetDisplayMode_delegate(IntPtr pDevice, ref D3DDISPLAYMODE pMode);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint Present_delegate(IntPtr pDevice, IntPtr pSourceRect, IntPtr pDestRec, uint hDestWindowOverride, IntPtr pDirtyRegion);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
