@@ -1,0 +1,1 @@
+from highway_pursuit_gym.envs.highway_pursuit import HighwayPursuitEnv

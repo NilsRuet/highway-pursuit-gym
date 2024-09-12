@@ -2,8 +2,8 @@ import gymnasium as gym
 import numpy as np
 import os
 from dataclasses import dataclass
-from envs._remote.highway_pursuit_client import HighwayPursuitClient
 from warnings import warn
+from highway_pursuit_gym.envs._remote.highway_pursuit_client import HighwayPursuitClient
 
 class HighwayPursuitEnv(gym.Env):
     """

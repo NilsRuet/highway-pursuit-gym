@@ -1,6 +1,6 @@
 import numpy as np
-from envs import HighwayPursuitEnv
-from wrappers import NoRewardTimeoutWrapper
+from highway_pursuit_gym.envs import HighwayPursuitEnv
+from highway_pursuit_gym.wrappers import NoRewardTimeoutWrapper
 import matplotlib.pyplot as plt
 import os
 import threading

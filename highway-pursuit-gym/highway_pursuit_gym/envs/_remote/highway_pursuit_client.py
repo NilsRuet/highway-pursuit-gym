@@ -4,8 +4,8 @@ import os
 import uuid
 import subprocess
 from multiprocessing import shared_memory
-from envs._remote.highway_pursuit_data import *
-from envs._remote.shared_names import *
+from highway_pursuit_gym.envs._remote.highway_pursuit_data import *
+from highway_pursuit_gym.envs._remote.shared_names import *
 from enum import Enum
 
 kernel32 = ctypes.windll.kernel32
