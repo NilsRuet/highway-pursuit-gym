@@ -77,11 +77,11 @@ namespace HighwayPursuitServer.Server
                 SkipIntro();
 
                 // Get server info now that the D3D device is initialized
-                D3DDISPLAYMODE display = _renderingService.GetDisplayMode();
+                BufferFormat buffer = _renderingService.GetBufferFormat();
                 var serverInfo = new ServerInfo(
-                    display.Height,
-                    display.Width,
-                    display.GetChannelCount(),
+                    buffer.height,
+                    buffer.width,
+                    buffer.channels,
                     (uint)_inputService.GetInputCount()
                 );
 
@@ -222,7 +222,7 @@ namespace HighwayPursuitServer.Server
             }
             else
             {
-                Logger.Log("Step took longer that the intended number of frames.", Logger.Level.Warning);
+                Logger.LogWarning("Step took longer that the intended number of frames.");
             }
             stopwatch.Stop();
         }
@@ -314,7 +314,7 @@ namespace HighwayPursuitServer.Server
             if (_totalEllapsedFrames % METRICS_UPDATE_FREQUENCY == 0)
             {
                 var ratio = _currentInfo.tps / FPS;
-                Logger.Log($"step {_totalEllapsedFrames} -> {_currentInfo.tps:0} ticks/s = x{ratio:0.#} | RAM:{_currentInfo.memory:0.##}Mb", Logger.Level.Debug);
+                Logger.LogDebug($"step {_totalEllapsedFrames} -> {_currentInfo.tps:0} ticks/s = x{ratio:0.#} | RAM:{_currentInfo.memory:0.##}Mb");
             }
         }
     }

@@ -136,15 +136,14 @@ namespace HighwayPursuitServer.Server
             return actions;
         }
 
-        public void WriteObservationBuffer(IntPtr buffer)
+        public void WriteObservationBuffer(IntPtr buffer, BufferFormat format)
         {
             bool success = false;
             try
             {
                 _observationSM.SafeMemoryMappedViewHandle.DangerousAddRef(ref success);
                 IntPtr memoryPtr = _observationSM.SafeMemoryMappedViewHandle.DangerousGetHandle();
-                var bufferSize = _serverInfo.obsWidth * _serverInfo.obsHeight * _serverInfo.obsChannels;
-                CopyMemory(memoryPtr, buffer, bufferSize);
+                CopyMemory(memoryPtr, buffer, format.Size());
             }
             finally
             {

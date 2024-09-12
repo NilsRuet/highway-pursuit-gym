@@ -39,7 +39,7 @@ namespace HighwayPursuitServer
 
         private static readonly object loggerLock = new object();
 
-        public enum Level
+        private enum Level
         {
             Debug,
             Info,
@@ -47,7 +47,27 @@ namespace HighwayPursuitServer
             Error
         }
 
-        public static void Log(string message, Level level)
+        public static void LogDebug(string message)
+        {
+            Log(message, Level.Debug);
+        }
+
+        public static void LogInfo(string message)
+        {
+            Log(message, Level.Info);
+        }
+
+        public static void LogWarning(string message)
+        {
+            Log(message, Level.Warning);
+        }
+
+        public static void LogError(string message)
+        {
+            Log(message, Level.Error);
+        }
+
+        private static void Log(string message, Level level)
         {
             if (!_init) return;
 #if !DEBUG

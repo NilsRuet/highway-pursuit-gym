@@ -16,6 +16,23 @@ namespace HighwayPursuitServer.Data
     }
 
     [StructLayout(LayoutKind.Sequential)]
+    public struct RECT
+    {
+        public int left;
+        public int top;
+        public int right;
+        public int bottom;
+
+        public RECT(int left, int top, int right, int bottom)
+        {
+            this.left = left;
+            this.top = top;
+            this.right = right;
+            this.bottom = bottom;
+        }
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
     public struct D3DLOCKED_RECT
     {
         public int Pitch;
@@ -29,25 +46,38 @@ namespace HighwayPursuitServer.Data
         public uint Height;
         public uint RefreshRate;
         public D3DFORMAT Format;
+    }
 
-        public bool IsSameAs(D3DDISPLAYMODE displayMode)
-        {
-            return Width == displayMode.Width &&
-                   Height == displayMode.Height &&
-                   RefreshRate == displayMode.RefreshRate &&
-                   Format == displayMode.Format;
-        }
+    [StructLayout(LayoutKind.Sequential)]
+    struct D3DPRESENT_PARAMETERS
+    {
+        public uint BackBufferWidth;
+        public uint BackBufferHeight;
+        public D3DFORMAT BackBufferFormat;
+        public uint BackBufferCount;
+        public uint MultiSampleType; // enum
+        public uint SwapEffect ;// enum
+        public IntPtr hDeviceWindow;
+        public uint Windowed; // bool
+        public uint EnableAutoDepthStencil; // bool
+        public D3DFORMAT AutoDepthStencilFormat;
+        public uint Flags;
 
-        public uint GetChannelCount()
-        {
-            switch (Format)
-            {
-                case D3DFORMAT.D3DFMT_X8R8G8B8:
-                    return 4;
-                default:
-                    throw new HighwayPursuitException(ErrorCode.UNSUPPORTED_BACKBUFFER_FORMAT);
-            }
-        }
+        public uint FullScreen_RefreshRateInHz;
+        public uint FullScreen_PresentationInterval;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct D3DSURFACE_DESC
+    {
+        public D3DFORMAT Format;
+        public uint Type;// enum
+        public uint Usage;
+        public uint Pool;// enum
+        public uint Size;
+        public uint MultiSampleType;// enum
+        public uint Width;
+        public uint Height;
     }
 
     public enum D3DBACKBUFFER_TYPE
@@ -113,5 +143,14 @@ namespace HighwayPursuitServer.Data
         D3DFMT_INDEX32 = 102,
 
         D3DFMT_FORCE_DWORD = 0x7fffffff,
+    }
+
+    public enum D3DDEVTYPE : uint
+    {
+        D3DDEVTYPE_HAL = 1,
+        D3DDEVTYPE_REF = 2,
+        D3DDEVTYPE_SW = 3,
+
+        D3DDEVTYPE_FORCE_DWORD = 0xffffffff
     }
 }

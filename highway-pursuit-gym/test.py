@@ -11,7 +11,7 @@ def main():
 
     images = []
     max_images = 50
-    image_skip = 60
+    image_skip = 1
     def record_step(step, img):
         if(len(images) < max_images and (step % image_skip) == 0):
             images.append(img) 

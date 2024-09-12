@@ -1,4 +1,5 @@
 ﻿using HighwayPursuitServer.Data;
+using HighwayPursuitServer.Exceptions;
 using HighwayPursuitServer.Server;
 using System;
 using System.Collections.Generic;
@@ -11,33 +12,47 @@ using System.Threading.Tasks;
 
 namespace HighwayPursuitServer.Injected
 {
+    public struct BufferFormat
+    {
+        public static uint FormatToChannels(D3DFORMAT format)
+        {
+            switch (format)
+            {
+                case D3DFORMAT.D3DFMT_X8R8G8B8:
+                    return 4;
+                default:
+                    throw new HighwayPursuitException(ErrorCode.UNSUPPORTED_BACKBUFFER_FORMAT);
+            }
+        }
+
+        public uint width;
+        public uint height;
+        public uint channels;
+
+        public BufferFormat(D3DSURFACE_DESC surface)
+        {
+            width = surface.Width;
+            height = surface.Height;
+            channels = FormatToChannels(surface.Format);
+        }
+
+        // Returns size in bytes
+        public uint Size()
+        {
+            return width * height * channels;
+        }
+    }
+
     class RenderingService
     {
         private const float FULL_ZOOM = 10.0f;
         private readonly IHookManager _hookManager;
         public IntPtr Device => GetDevice();
-        private IntPtr pSurface = IntPtr.Zero;
-        private D3DDISPLAYMODE _currentSurfaceDisplayMode = new D3DDISPLAYMODE()
-        {
-            Width = 0,
-            Height = 0,
-            RefreshRate = 0,
-            Format = D3DFORMAT.D3DFMT_UNKNOWN
-        };
-
 
         public RenderingService(IHookManager hookManager)
         {
             this._hookManager = hookManager;
             this.RegisterHooks();
-        }
-
-        ~RenderingService()
-        {
-            if (pSurface != IntPtr.Zero)
-            {
-                HandleDRDERR(IDirect3DSurface8.Release(pSurface));
-            }
         }
 
         private void HandleDRDERR(uint errorCode)
@@ -48,11 +63,27 @@ namespace HighwayPursuitServer.Injected
             }
         }
 
-        public D3DDISPLAYMODE GetDisplayMode()
+        public BufferFormat GetBufferFormat()
         {
-            D3DDISPLAYMODE displayMode = new D3DDISPLAYMODE();
-            HandleDRDERR(IDirect3DDevice8.GetDisplayMode(Device, ref displayMode));
-            return displayMode;
+            BufferFormat res;
+
+            HandleDRDERR(IDirect3DDevice8.GetBackBuffer(Device, 0, D3DBACKBUFFER_TYPE.TYPE_MONO, out var pBackBufferSurfaceValue));
+            IntPtr pBackBufferSurface = new IntPtr(pBackBufferSurfaceValue);
+            try
+            {
+                res = GetBufferFormatFromSurface(pBackBufferSurface);
+            }
+            finally
+            {
+                HandleDRDERR(IDirect3DSurface8.Release(pBackBufferSurface));
+            }
+            return res;
+        }
+
+        private BufferFormat GetBufferFormatFromSurface(IntPtr pSurface)
+        {
+            HandleDRDERR(IDirect3DSurface8.GetDesc(pSurface, out var desc));
+            return new BufferFormat(desc);
         }
 
         public void SetFullscreenFlag(bool useFullscreen)
@@ -72,54 +103,29 @@ namespace HighwayPursuitServer.Injected
             Marshal.Copy(bytes, 0, zoomAnimValue, bytes.Length);
         }
 
-        private void EnsureSurface()
+        public void Screenshot(Action<IntPtr, BufferFormat> pixelDataHandler)
         {
-            // Get display mode
-            var displayMode = GetDisplayMode();
-
-            // Flag about creating a new surface
-            bool surfaceInitialized = (pSurface != IntPtr.Zero);
-            bool shouldUpdateSurface = (!surfaceInitialized) || (!_currentSurfaceDisplayMode.IsSameAs(displayMode));
-
-            // Release the current surface
-            if (shouldUpdateSurface && surfaceInitialized)
-            {
-                HandleDRDERR(IDirect3DSurface8.Release(pSurface));
-            }
-
-            // Create surface if necessary
-            if (shouldUpdateSurface)
-            {
-                uint pSurfaceValue = 0;
-                HandleDRDERR(IDirect3DDevice8.CreateImageSurface(Device, displayMode.Width, displayMode.Height, (uint)displayMode.Format, ref pSurfaceValue));
-                pSurface = new IntPtr(pSurfaceValue);
-                _currentSurfaceDisplayMode = displayMode;
-            }
-        }
-
-        public void Screenshot(Action<IntPtr> pixelDataHandler)
-        {
-            EnsureSurface();
-
             // Back buffer method
-            uint pBackBufferSurfaceValue = 0;
-            HandleDRDERR(IDirect3DDevice8.GetBackBuffer(Device, 0, D3DBACKBUFFER_TYPE.TYPE_MONO, ref pBackBufferSurfaceValue));
+            HandleDRDERR(IDirect3DDevice8.GetBackBuffer(Device, 0, D3DBACKBUFFER_TYPE.TYPE_MONO, out var pBackBufferSurfaceValue));
             IntPtr pBackBufferSurface = new IntPtr(pBackBufferSurfaceValue);
 
-            // TODO: This is leaking memory and I don't know why!
-            HandleDRDERR(IDirect3DDevice8.CopyRects(Device, pBackBufferSurface, IntPtr.Zero, 0, pSurface, IntPtr.Zero));
+            // Create rectangle from which data will be read (surface sized)
+            BufferFormat format = GetBufferFormatFromSurface(pBackBufferSurface);
+            RECT renderingRect = new RECT(0, 0, (int)format.width, (int)format.height);
+            IntPtr rectPtr = Marshal.AllocHGlobal(Marshal.SizeOf(renderingRect));
+            Marshal.StructureToPtr(renderingRect, rectPtr, false);
             try
             {
                 // Lock pixels
-                HandleDRDERR(IDirect3DSurface8.LockRect(pSurface, out D3DLOCKED_RECT lockedRect, IntPtr.Zero, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY));
-                // Handle pixel data
-                pixelDataHandler(lockedRect.pBits);
+                HandleDRDERR(IDirect3DSurface8.LockRect(pBackBufferSurface, out D3DLOCKED_RECT lockedRect, rectPtr, (ulong)LOCK_RECT_FLAGS.D3DLOCK_READONLY));
+                pixelDataHandler(lockedRect.pBits, format);
             }
             finally
             {
                 // Release resources
-                HandleDRDERR(IDirect3DSurface8.UnlockRect(pSurface));
+                HandleDRDERR(IDirect3DSurface8.UnlockRect(pBackBufferSurface));
                 HandleDRDERR(IDirect3DSurface8.Release(pBackBufferSurface));
+                Marshal.FreeHGlobal(rectPtr);
             }
         }
 
@@ -130,10 +136,21 @@ namespace HighwayPursuitServer.Injected
             // Window Procedure
             IntPtr windowProcPtr = new IntPtr(moduleBase.ToInt32() + MemoryAdresses.WINDOW_PROC_OFFSET);
             WindowProcedure = Marshal.GetDelegateForFunctionPointer<WindowProcedure_delegate>(windowProcPtr);
-            _hookManager.RegisterHook(windowProcPtr, new WindowProcedure_delegate(WindowProcedureHook));
+            _hookManager.RegisterHook(windowProcPtr, new WindowProcedure_delegate(WindowProcedure_Hook));
 
             // D3D8 functions
             var d3d8 = _hookManager.GetD3D8Base();
+
+            // Create device
+            IntPtr createDevicePtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.CREATE_DEVICE_OFFSET);
+            IDirect3D8.CreateDevice = Marshal.GetDelegateForFunctionPointer<CreateDevice_delegate>(createDevicePtr);
+            _hookManager.RegisterHook(createDevicePtr, new CreateDevice_delegate(CreateDevice_Hook));
+
+            // Reset device
+            IntPtr resetDevicePtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.RESET_DEVICE_OFFSET);
+            IDirect3DDevice8.Reset = Marshal.GetDelegateForFunctionPointer<Reset_delegate>(resetDevicePtr);
+            _hookManager.RegisterHook(resetDevicePtr, new Reset_delegate(Reset_Hook));
+
             // Get display mode
             IntPtr getDisplayModePtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.GET_DISPLAY_MODE_OFFSET);
             IDirect3DDevice8.GetDisplayMode = Marshal.GetDelegateForFunctionPointer<GetDisplayMode_delegate>(getDisplayModePtr);
@@ -149,6 +166,10 @@ namespace HighwayPursuitServer.Injected
             // Copy rects
             IntPtr copyRectsPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.COPY_RECTS_OFFSET);
             IDirect3DDevice8.CopyRects = Marshal.GetDelegateForFunctionPointer<CopyRects_delegate>(copyRectsPtr);
+
+            // Get image surface desc
+            IntPtr getDescPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.GET_DESC_OFFSET);
+            IDirect3DSurface8.GetDesc = Marshal.GetDelegateForFunctionPointer<GetDesc_delegate>(getDescPtr);
 
             // Lock rect
             IntPtr lockRectPtr = new IntPtr(d3d8.ToInt32() + MemoryAdresses.LOCK_RECT_OFFSET);
@@ -169,7 +190,7 @@ namespace HighwayPursuitServer.Injected
         }
 
         #region hooks
-        void WindowProcedureHook(IntPtr hwnd, uint uMsg, uint wParam, uint lParam)
+        void WindowProcedure_Hook(IntPtr hwnd, uint uMsg, uint wParam, uint lParam)
         {
             const uint focused = 1;
             const uint WM_ACTIVATEAPP = 0x1c;
@@ -184,14 +205,35 @@ namespace HighwayPursuitServer.Injected
                 WindowProcedure(hwnd, uMsg, wParam, lParam);
             }
         }
+
+        uint CreateDevice_Hook(IntPtr d3d8Interface, uint adapter, D3DDEVTYPE deviceType, IntPtr hFocusWindow, uint behaviorFlags, ref D3DPRESENT_PARAMETERS pPresentationParameters, ref IntPtr ppReturnedDeviceInterface)
+        {
+            // Make back buffer lockable for pixel capture
+
+            const uint D3DPRESENTFLAG_LOCKABLE_BACKBUFFER = 0x00000001;
+            pPresentationParameters.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+            return IDirect3D8.CreateDevice(d3d8Interface, adapter, deviceType, hFocusWindow, behaviorFlags, ref pPresentationParameters, ref ppReturnedDeviceInterface);
+        }
+
+        uint Reset_Hook(IntPtr pDevice, ref D3DPRESENT_PARAMETERS pPresentationParameters)
+        {
+            return IDirect3DDevice8.Reset(pDevice, ref pPresentationParameters);
+        }
+
         #endregion
 
         #region window management functions
         static WindowProcedure_delegate WindowProcedure;
         #endregion
         #region D3D8 Functions
+        static class IDirect3D8
+        {
+            public static CreateDevice_delegate CreateDevice;
+        }
+
         static class IDirect3DDevice8
         {
+            public static Reset_delegate Reset;
             public static GetDisplayMode_delegate GetDisplayMode;
             public static CreateImageSurface_delegate CreateImageSurface;
             public static GetBackBuffer_delegate GetBackBuffer;
@@ -200,6 +242,7 @@ namespace HighwayPursuitServer.Injected
 
         static class IDirect3DSurface8
         {
+            public static GetDesc_delegate GetDesc;
             public static LockRect_delegate LockRect;
             public static UnlockRect_delegate UnlockRect;
             public static Release_delegate Release;
@@ -214,6 +257,14 @@ namespace HighwayPursuitServer.Injected
         #region device methods
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint CreateDevice_delegate(IntPtr d3d8Interface, uint adapter, D3DDEVTYPE deviceType, IntPtr hFocusWindow, uint behaviorFlags, ref D3DPRESENT_PARAMETERS pPresentationParameters, ref IntPtr ppReturnedDeviceInterface);
+        
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint Reset_delegate(IntPtr pDevice, ref D3DPRESENT_PARAMETERS pPresentationParameters);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U4)]
         delegate uint GetDisplayMode_delegate(IntPtr pDevice, ref D3DDISPLAYMODE pMode);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -222,7 +273,7 @@ namespace HighwayPursuitServer.Injected
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
-        delegate uint GetBackBuffer_delegate(IntPtr pDevice, uint backBuffer, D3DBACKBUFFER_TYPE type, ref uint pSurface);
+        delegate uint GetBackBuffer_delegate(IntPtr pDevice, uint backBuffer, D3DBACKBUFFER_TYPE type, out uint pSurface);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
@@ -232,6 +283,10 @@ namespace HighwayPursuitServer.Injected
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]
         delegate uint LockRect_delegate(IntPtr pSurface, out D3DLOCKED_RECT pLockedRect, IntPtr pRect, ulong flags);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        [return: MarshalAs(UnmanagedType.U4)]
+        delegate uint GetDesc_delegate(IntPtr pSurface, out D3DSURFACE_DESC desc);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         [return: MarshalAs(UnmanagedType.U4)]

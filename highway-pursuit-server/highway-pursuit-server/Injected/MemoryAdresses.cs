@@ -29,10 +29,13 @@ namespace HighwayPursuitServer.Injected
         public const uint MISSILES_OFFSET = 0x97A04;
         #endregion
         #region d3d8.dll
+        public const uint CREATE_DEVICE_OFFSET = 0x492D0;
+        public const uint RESET_DEVICE_OFFSET = 0x29E50;
         public const uint GET_DISPLAY_MODE_OFFSET = 0x2A650;
         public const uint CREATE_SURFACE_IMAGE_OFFSET = 0x2B6F0;
         public const uint GET_BACK_BUFFER_OFFSET = 0x2A1F0;
         public const uint COPY_RECTS_OFFSET = 0x2A880;
+        public const uint GET_DESC_OFFSET = 0x27D30;
         public const uint LOCK_RECT_OFFSET = 0x27E50;
         public const uint UNLOCK_RECT_OFFSET = 0x27F30;
         public const uint SURFACE_RELEASE_OFFSET = 0x24140;
