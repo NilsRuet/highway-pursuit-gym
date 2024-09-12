@@ -216,6 +216,9 @@ namespace HighwayPursuitServer.Injected
             // Make back buffer lockable for pixel capture
             const uint D3DPRESENTFLAG_LOCKABLE_BACKBUFFER = 0x00000001;
             pPresentationParameters.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+            pPresentationParameters.BackBufferWidth = 640;
+            pPresentationParameters.BackBufferHeight = 480;
+
             return IDirect3D8.CreateDevice(d3d8Interface, adapter, deviceType, hFocusWindow, behaviorFlags, ref pPresentationParameters, ref ppReturnedDeviceInterface);
         }
 

@@ -40,7 +40,8 @@ def main():
             done = truncated or terminated
             step_count += 1
             record_step(step_count, observation)
-
+    
+    print(info)
     env.close()
 
     input("Waiting for key press...")

@@ -65,6 +65,11 @@ namespace HighwayPursuitServer.Data
 
         public uint FullScreen_RefreshRateInHz;
         public uint FullScreen_PresentationInterval;
+
+        public override string ToString()
+        {
+            return $"({BackBufferWidth}x{BackBufferHeight} {BackBufferFormat} [{BackBufferCount}], windowed:{Windowed}, flags:{Flags})";
+        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
