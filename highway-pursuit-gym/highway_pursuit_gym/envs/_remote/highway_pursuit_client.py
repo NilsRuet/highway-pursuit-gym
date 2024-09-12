@@ -180,6 +180,10 @@ class HighwayPursuitClient:
 
         # Retrieve the server info
         server_info: ServerInfo = ServerInfo.from_buffer_copy(self._server_info_sm.buf)
+
+        # This is the observation shape in the shared memory
+        self._server_observation_shape = (server_info.obs_height, server_info.obs_width, server_info.obs_channels)
+        # This is the observation shape as returned by the client when reset/step is called
         self.observation_shape = (server_info.obs_height, server_info.obs_width, HighwayPursuitClient.RGB_CHANNEL_COUNT)
         self.action_count = server_info.action_count
         
@@ -189,7 +193,7 @@ class HighwayPursuitClient:
         self._reward_sm = self._create_shared_memory(name=reward_memory_name, size=ctypes.sizeof(Reward))
         self._termination_sm = self._create_shared_memory(name=termination_memory_name, size=ctypes.sizeof(Termination))
 
-        observation_buffer_size = np.prod(self.observation_shape).item()
+        observation_buffer_size = np.prod(self._server_observation_shape).item()
         action_buffer_size = self.action_count # one byte per action
         self._observation_sm = self._create_shared_memory(name=observation_memory_name, size=observation_buffer_size)
         self._action_sm = self._create_shared_memory(name=action_memory_name, size=action_buffer_size)
@@ -247,7 +251,7 @@ class HighwayPursuitClient:
         """
         Retrieves an observation from the shared memory buffer
         """
-        array = np.ndarray(self.observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf)
+        array = np.ndarray(self._server_observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf)
         array.flags.writeable = False
         return np.copy(array)[:, :, :HighwayPursuitClient.RGB_CHANNEL_COUNT]
 
