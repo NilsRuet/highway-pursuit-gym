@@ -3,12 +3,13 @@ from envs import HighwayPursuitEnv
 from wrappers import NoRewardTimeoutWrapper
 import matplotlib.pyplot as plt
 import os
+import threading
+import time
 
-def run_config(launcher_path, app_path, dll_path, options, record_step):
+def run_config(launcher_path, app_path, dll_path, options, record_step, episode_count=100):
     env = HighwayPursuitEnv(launcher_path, app_path, dll_path, options=options)
     # env = NoRewardTimeoutWrapper(env, timeout=(60*45) / options["frameskip"])
 
-    episode_count = 10
     for _ in range(episode_count):
         observation, info = env.reset()
         record_step(0, observation)
@@ -61,7 +62,20 @@ def main():
     
     options["resolution"] = "320x240"
     options["enable_rendering"] = True
-    run_config(launcher_path, app_path, dll_path, options, record_step)
+
+    get_thread = lambda: threading.Thread(target=lambda: run_config(launcher_path, app_path, dll_path, options, lambda *args: None))
+
+    threads = []
+    for i in range(2):
+        threads.append(get_thread())
+
+    for i in range(len(threads)):
+        # Start the thread
+        threads[i].start()
+        time.sleep(3)
+      
+    for i in range(len(threads)):
+        threads[i].join()
 
     input("Waiting for key press...")
     for image in images:

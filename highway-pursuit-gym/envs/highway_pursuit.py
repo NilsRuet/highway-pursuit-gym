@@ -20,7 +20,7 @@ class HighwayPursuitEnv(gym.Env):
             "frameskip": 4,
             "resolution": "640x480",
             "enable_rendering": False,
-            "server_restart_frequency": int(1.5e6),
+            "server_restart_frequency": int(5e6),
             "max_memory_usage": 300.0,
         }
 
