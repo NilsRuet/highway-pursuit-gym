@@ -18,7 +18,7 @@ namespace HighwayPursuitServer.Server
     {
         const int CLIENT_TIMEOUT = 2000; // TIMEOUT in ms
 
-        private readonly ServerOptions _args;
+        private readonly ServerParams _args;
         private ServerInfo _serverInfo;
 
         private Semaphore _lockServerPool;
@@ -37,7 +37,7 @@ namespace HighwayPursuitServer.Server
 
         private readonly List<IDisposable> _disposableResources = new List<IDisposable>();
 
-        public CommunicationManager(ServerOptions args)
+        public CommunicationManager(ServerParams args)
         {
             this._args = args;
         }

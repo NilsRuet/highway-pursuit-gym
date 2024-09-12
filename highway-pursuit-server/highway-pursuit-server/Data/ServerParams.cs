@@ -7,8 +7,23 @@ using System.Threading.Tasks;
 namespace HighwayPursuitServer.Data
 {
     [Serializable]
-    public struct ServerOptions
+    public struct ServerParams
     {
+        [Serializable]
+        public struct RenderParams
+        {
+            public readonly uint renderWidth;
+            public readonly uint renderHeight;
+            public readonly bool renderingEnabled;
+
+            public RenderParams(uint renderWidth, uint renderHeight, bool renderingEnabled)
+            {
+                this.renderWidth = renderWidth;
+                this.renderHeight = renderHeight;
+                this.renderingEnabled = renderingEnabled;
+            }
+        }
+
         private const string serverMutexId = "a";
         private const string clientMutexId = "b";
         private const string returnCodeMemoryId = "0";
@@ -22,6 +37,7 @@ namespace HighwayPursuitServer.Data
 
         public readonly bool isRealTime;
         public readonly int frameskip;
+        public readonly RenderParams renderParams;
         public readonly string logDirectory;
         public readonly string serverMutexName;
         public readonly string clientMutexName;
@@ -34,10 +50,11 @@ namespace HighwayPursuitServer.Data
         public readonly string actionMemoryName;
         public readonly string terminationMemoryName;
 
-        public ServerOptions(bool isRealTime, int frameskip, string logDirectoryPath, string sharedResourcesPrefix)
+        public ServerParams(bool isRealTime, int frameskip, RenderParams renderOptions, string logDirectoryPath, string sharedResourcesPrefix)
         {
             this.isRealTime = isRealTime;
             this.frameskip = frameskip;
+            this.renderParams = renderOptions;
             this.logDirectory = logDirectoryPath;
             this.serverMutexName = $"{sharedResourcesPrefix}{serverMutexId}";
             this.clientMutexName = $"{sharedResourcesPrefix}{clientMutexId}";

@@ -46,11 +46,13 @@ namespace HighwayPursuitServer.Injected
     class RenderingService
     {
         private const float FULL_ZOOM = 10.0f;
+        private readonly ServerParams.RenderParams _renderParams;
         private readonly IHookManager _hookManager;
         public IntPtr Device => GetDevice();
 
-        public RenderingService(IHookManager hookManager)
+        public RenderingService(IHookManager hookManager, ServerParams.RenderParams renderParams)
         {
+            this._renderParams = renderParams;
             this._hookManager = hookManager;
             this.RegisterHooks();
         }
@@ -213,28 +215,36 @@ namespace HighwayPursuitServer.Injected
 
         private uint CreateDevice_Hook(IntPtr d3d8Interface, uint adapter, D3DDEVTYPE deviceType, IntPtr hFocusWindow, uint behaviorFlags, ref D3DPRESENT_PARAMETERS pPresentationParameters, ref IntPtr ppReturnedDeviceInterface)
         {
-            // Make back buffer lockable for pixel capture
-            const uint D3DPRESENTFLAG_LOCKABLE_BACKBUFFER = 0x00000001;
-            pPresentationParameters.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
-            pPresentationParameters.BackBufferWidth = 640;
-            pPresentationParameters.BackBufferHeight = 480;
-
+            UpdatePresentationParams(ref pPresentationParameters);
             return IDirect3D8.CreateDevice(d3d8Interface, adapter, deviceType, hFocusWindow, behaviorFlags, ref pPresentationParameters, ref ppReturnedDeviceInterface);
         }
 
         private uint Reset_Hook(IntPtr pDevice, ref D3DPRESENT_PARAMETERS pPresentationParameters)
         {
-            // Make back buffer lockable for pixel capture
-            const uint D3DPRESENTFLAG_LOCKABLE_BACKBUFFER = 0x00000001;
-            pPresentationParameters.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+            UpdatePresentationParams(ref pPresentationParameters);
             return IDirect3DDevice8.Reset(pDevice, ref pPresentationParameters);
+        }
+
+        private void UpdatePresentationParams(ref D3DPRESENT_PARAMETERS pPresentationParameters)
+        {
+            const uint D3DPRESENTFLAG_LOCKABLE_BACKBUFFER = 0x00000001;
+            // Make back buffer lockable for pixel capture
+            pPresentationParameters.Flags |= D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
+            // Update width/height
+            pPresentationParameters.BackBufferWidth = this._renderParams.renderWidth;
+            pPresentationParameters.BackBufferHeight = this._renderParams.renderHeight;
         }
 
         private uint Present_Hook(IntPtr pDevice, IntPtr pSourceRect, IntPtr pDestRec, uint hDestWindowOverride, IntPtr pDirtyRegion)
         {
-            return IDirect3DDevice8.Present(pDevice, pSourceRect, pDestRec, hDestWindowOverride, pDirtyRegion);
+            if (_renderParams.renderingEnabled)
+            {
+                return IDirect3DDevice8.Present(pDevice, pSourceRect, pDestRec, hDestWindowOverride, pDirtyRegion);
+            } else
+            {
+                return 0; // Don't do anything, return OK
+            }
         }
-
         #endregion
 
         #region window management functions

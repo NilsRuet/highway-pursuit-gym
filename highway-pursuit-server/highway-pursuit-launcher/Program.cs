@@ -16,9 +16,11 @@ namespace HighwayPursuitLauncher
         const int ARG_DLL = 1;
         const int ARG_REAL_TIME = 2;
         const int ARG_FRAME_SKIP = 3;
-        const int ARG_LOG_DIR_PATH = 4;
-        const int ARG_SHARED_RESOURCES_PREFIX = 5;
-        const int TOTAL_ARGS = 6;
+        const int ARG_RESOLUTION = 4;
+        const int ARG_ENABLE_RENDERING = 5;
+        const int ARG_LOG_DIR_PATH = 6;
+        const int ARG_SHARED_RESOURCES_PREFIX = 7;
+        const int TOTAL_ARGS = 8;
 
         enum ExitCode : int
         {
@@ -47,9 +49,22 @@ namespace HighwayPursuitLauncher
                     frameskip = 1;
                 }
 
-                var options = new ServerOptions(
+                if(!TryParseResolution(args[ARG_RESOLUTION], out uint renderWidth, out uint renderHeight))
+                {
+                    renderWidth = 640;
+                    renderHeight = 480;
+                }
+
+                if (!bool.TryParse(args[ARG_ENABLE_RENDERING], out bool renderEnabled))
+                {
+                    renderEnabled = true;
+                }
+
+                var renderParams = new ServerParams.RenderParams(renderWidth,renderHeight, renderEnabled);
+                var options = new ServerParams(
                     isRealTime,
                     frameskip,
+                    renderParams,
                     args[ARG_LOG_DIR_PATH],
                     args[ARG_SHARED_RESOURCES_PREFIX]
                 );
@@ -72,9 +87,24 @@ namespace HighwayPursuitLauncher
             }
         }
 
+        static bool TryParseResolution(string arg, out uint width, out uint height)
+        {
+            try
+            {
+                var dims = arg.Split('x');
+                width = uint.Parse(dims[0]);
+                height = uint.Parse(dims[1]);
+                return true;
+            } catch
+            {
+                width = 0;
+                height = 0;
+                return false;
+            }
+        }
+
         static bool ProcessArgs(string[] args, out string targetExe, out string targetDll)
         {
-
             // Check arg count
             if(args.Length != TOTAL_ARGS)
             {
@@ -102,6 +132,11 @@ namespace HighwayPursuitLauncher
             }
 
             if (string.IsNullOrEmpty(args[ARG_FRAME_SKIP]))
+            {
+                return false;
+            }
+
+            if (string.IsNullOrEmpty(args[ARG_RESOLUTION]))
             {
                 return false;
             }

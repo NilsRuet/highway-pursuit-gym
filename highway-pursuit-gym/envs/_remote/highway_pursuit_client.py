@@ -122,6 +122,8 @@ class HighwayPursuitClient:
             self._dll_path,
             str(self._options["real_time"]),
             str(self._options["frameskip"]),
+            self._options["resolution"],
+            str(self._options["enable_rendering"]),
             self._options["log_dir"],
             self._app_resources_id
         ]

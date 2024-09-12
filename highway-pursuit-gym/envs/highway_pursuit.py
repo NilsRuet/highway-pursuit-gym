@@ -18,8 +18,10 @@ class HighwayPursuitEnv(gym.Env):
         return {
             "real_time": False,
             "frameskip": 4,
+            "resolution": "640x480",
+            "enable_rendering": False,
             "server_restart_frequency": int(1.5e6),
-            "max_memory_usage": 300.0
+            "max_memory_usage": 300.0,
         }
 
     def _add_options_no_override(defaults, new_params):

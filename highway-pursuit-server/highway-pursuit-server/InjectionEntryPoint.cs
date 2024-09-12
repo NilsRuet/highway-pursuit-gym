@@ -13,12 +13,12 @@ namespace HighwayPursuitServer
 {
     public class InjectionEntryPoint : EasyHook.IEntryPoint
     {
-        public InjectionEntryPoint(EasyHook.RemoteHooking.IContext context, ServerOptions options)
+        public InjectionEntryPoint(EasyHook.RemoteHooking.IContext context, ServerParams options)
         {
             Logger.SetLogDir(options.logDirectory);
         }
 
-        public void Run(EasyHook.RemoteHooking.IContext context, ServerOptions options)
+        public void Run(EasyHook.RemoteHooking.IContext context, ServerParams options)
         {
             bool processWokenUp = false;
             try

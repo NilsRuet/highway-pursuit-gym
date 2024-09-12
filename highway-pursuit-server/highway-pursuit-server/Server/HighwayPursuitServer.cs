@@ -17,11 +17,11 @@ namespace HighwayPursuitServer.Server
         private readonly float TICKS_PER_MS = Stopwatch.Frequency / 1000.0f;
         const long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
         const int GAME_TIMEOUT = 2000; // results in an error if the game fails to update
-        const int METRICS_UPDATE_FREQUENCY = 60 * 60; // update info every minute of gameplay
-        const int LOG_FREQUENCY = 60 * 60; // update metrics every minute of gameplay
+        const int METRICS_UPDATE_FREQUENCY = (int)(FPS * 30); // update info every 30s of gameplay
+        const int LOG_FREQUENCY = (int)(FPS * 60); // update metrics every minute of gameplay
 
         // Instance members
-        private readonly ServerOptions _options; // Game options
+        private readonly ServerParams _options; // Game options
 
         private readonly CommunicationManager _communicationManager;
         private readonly IHookManager _hookManager;
@@ -43,7 +43,7 @@ namespace HighwayPursuitServer.Server
         private long startTick; // used to measure performance
 
 
-        public HighwayPursuitServer(CommunicationManager communicationManager, ServerOptions options)
+        public HighwayPursuitServer(CommunicationManager communicationManager, ServerParams options)
         {
             _communicationManager = communicationManager; // This will connect once the game is initialized
             _options = options;
@@ -57,7 +57,7 @@ namespace HighwayPursuitServer.Server
             _episodeService = new EpisodeService(_hookManager);
             _updateService = new UpdateService(_hookManager, _options.isRealTime, _lockServerPool, _lockUpdatePool, FPS, PERFORMANCE_COUNTER_FREQUENCY);
             _inputService = new InputService(_hookManager);
-            _renderingService = new RenderingService(_hookManager);
+            _renderingService = new RenderingService(_hookManager, _options.renderParams);
             _scoreService = new ScoreService(_hookManager);
             _cheatService = new CheatService(_hookManager);
 
@@ -289,7 +289,7 @@ namespace HighwayPursuitServer.Server
             if (_totalEllapsedFrames % METRICS_UPDATE_FREQUENCY == 0)
             {
                 long elapsedTicks = Environment.TickCount - startTick;
-                var tps = LOG_FREQUENCY / (elapsedTicks / 1000.0f); // milliseconds to seconds
+                var tps = METRICS_UPDATE_FREQUENCY / (elapsedTicks / 1000.0f); // milliseconds to seconds
 
                 float memorySize = ComputeMemoryUsage();
                 _currentInfo = new Info(tps, memorySize);
@@ -311,7 +311,7 @@ namespace HighwayPursuitServer.Server
         // Tracks some useful info for debugging
         private void HandleLogs()
         {
-            if (_totalEllapsedFrames % METRICS_UPDATE_FREQUENCY == 0)
+            if (_totalEllapsedFrames % LOG_FREQUENCY == 0)
             {
                 var ratio = _currentInfo.tps / FPS;
                 Logger.LogDebug($"step {_totalEllapsedFrames} -> {_currentInfo.tps:0} ticks/s = x{ratio:0.#} | RAM:{_currentInfo.memory:0.##}Mb");
