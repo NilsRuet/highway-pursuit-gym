@@ -47,35 +47,11 @@ def main():
     options["real_time"] = False
     options["frameskip"] = 4
     options["log_dir"] = log_dir
-
-    # options["resolution"] = "640x480"
-    # options["enable_rendering"] = True
-    # run_config(launcher_path, app_path, dll_path, options, record_step)
-    
-    # options["resolution"] = "640x480"
-    # options["enable_rendering"] = False
-    # run_config(launcher_path, app_path, dll_path, options, record_step)
-    
-    # options["resolution"] = "320x240"
-    # options["enable_rendering"] = True
-    # run_config(launcher_path, app_path, dll_path, options, record_step)
     
     options["resolution"] = "320x240"
     options["enable_rendering"] = True
 
-    get_thread = lambda: threading.Thread(target=lambda: run_config(launcher_path, app_path, dll_path, options, lambda *args: None))
-
-    threads = []
-    for i in range(2):
-        threads.append(get_thread())
-
-    for i in range(len(threads)):
-        # Start the thread
-        threads[i].start()
-        time.sleep(3)
-      
-    for i in range(len(threads)):
-        threads[i].join()
+    run_config(launcher_path, app_path, dll_path, options, lambda *args: None)
 
     input("Waiting for key press...")
     for image in images:

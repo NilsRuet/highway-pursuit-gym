@@ -1,1 +1,1 @@
-from wrappers.no_reward_timeout_wrapper import NoRewardTimeoutWrapper
+from highway_pursuit_gym.wrappers.no_reward_timeout_wrapper import NoRewardTimeoutWrapper

@@ -16,7 +16,7 @@ namespace HighwayPursuitServer.Server
 {
     class CommunicationManager
     {
-        const int CLIENT_TIMEOUT = 2000; // TIMEOUT in ms
+        const int CLIENT_TIMEOUT = 15000; // TIMEOUT in ms
 
         private readonly ServerParams _args;
         private ServerInfo _serverInfo;

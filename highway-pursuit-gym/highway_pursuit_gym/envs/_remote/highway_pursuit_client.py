@@ -60,6 +60,7 @@ class HighwayPursuitClient:
     """
 
     SERVER_TIMEOUT = 10000 # timeout in ms
+    RGB_CHANNEL_COUNT = 3
 
     def __init__(self, launcher_path, highway_pursuit_path, dll_path, options):
         """
@@ -179,7 +180,7 @@ class HighwayPursuitClient:
 
         # Retrieve the server info
         server_info: ServerInfo = ServerInfo.from_buffer_copy(self._server_info_sm.buf)
-        self.observation_shape = (server_info.obs_height, server_info.obs_width, server_info.obs_channels)
+        self.observation_shape = (server_info.obs_height, server_info.obs_width, HighwayPursuitClient.RGB_CHANNEL_COUNT)
         self.action_count = server_info.action_count
         
         # Create the remaining shared memory
@@ -248,7 +249,7 @@ class HighwayPursuitClient:
         """
         array = np.ndarray(self.observation_shape, dtype=np.uint8, buffer=self._observation_sm.buf)
         array.flags.writeable = False
-        return np.copy(array)[:, :, :3]
+        return np.copy(array)[:, :, :HighwayPursuitClient.RGB_CHANNEL_COUNT]
 
     def close(self):
         """
