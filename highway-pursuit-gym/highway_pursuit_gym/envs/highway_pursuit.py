@@ -164,7 +164,7 @@ class HighwayPursuitEnv(gym.Env):
         Renders the current state of the environment. 
         """
         if self.render_mode == "rgb_array":
-            return self._last_observation
+            return self._last_observation[..., ::-1] # BGR to RGB
 
     def close(self):
         """
