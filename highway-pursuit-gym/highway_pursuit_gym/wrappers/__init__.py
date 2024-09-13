@@ -1,1 +1,3 @@
 from highway_pursuit_gym.wrappers.no_reward_timeout_wrapper import NoRewardTimeoutWrapper
+from highway_pursuit_gym.wrappers.remove_powerups_wrapper import RemovePowerupsWrapper
+from highway_pursuit_gym.wrappers.multi_binary_to_discrete_wrapper import MultiBinaryToDiscreteWrapper

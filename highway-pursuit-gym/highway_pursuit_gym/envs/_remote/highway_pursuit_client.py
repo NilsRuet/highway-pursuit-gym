@@ -281,7 +281,7 @@ class HighwayPursuitClient:
         Writes the given action to the shared memory buffer.
         """
         # Write an action in the appropriate buffer
-        bytes = bytearray(action)
+        bytes = bytearray(np.array(action, dtype=np.uint8))
         self._action_sm.buf[:len(bytes)] = bytes
 
     def _write_instruction(self, instruction: Instruction):
