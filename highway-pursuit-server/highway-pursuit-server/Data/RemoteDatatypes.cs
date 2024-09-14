@@ -36,9 +36,10 @@ namespace HighwayPursuitServer.Data
 
     public enum InstructionCode : uint
     {
-        RESET = 1,
-        STEP = 2,
-        CLOSE = 3,
+        RESET_NEW_LIFE = 1,
+        RESET_NEW_GAME = 2,
+        STEP = 3,
+        CLOSE = 0xFF
     }
 
     [StructLayout(LayoutKind.Sequential)]

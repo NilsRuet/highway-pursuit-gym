@@ -99,9 +99,13 @@ class HighwayPursuitEnv(gym.Env):
 
         return time_ellapsed or memory_usage_too_high
 
-    def reset(self, seed=None, options=None):
+    def reset(self, seed=None, options: dict = {"new_game": False}):
         """
         Resets the environment, and retrieves the initial observation. Note: does not support seeding.
+
+        Args:
+            options (dict): Reset options with keys:
+                - new_game (bool): wether to start a new episode by starting a new_game or by respawning the player
 
         Returns:
             tuple: A tuple containing:
@@ -119,8 +123,12 @@ class HighwayPursuitEnv(gym.Env):
             self._restart_server()
             has_restarted = True
 
+        new_game = False
+        if options != None:
+            new_game = options.get("new_game", False)
+
         # get observation and info
-        observation, info = self._client.reset()
+        observation, info = self._client.reset(new_game)
 
         # add restart status to the info
         if(has_restarted):

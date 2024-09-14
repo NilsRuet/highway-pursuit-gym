@@ -59,7 +59,7 @@ class HighwayPursuitClient:
     game environment, including sending actions, receiving observations, and server synchronization.
     """
 
-    SERVER_TIMEOUT = 10000 # timeout in ms
+    SERVER_TIMEOUT = 15000 # timeout in ms
     RGB_CHANNEL_COUNT = 3
 
     def __init__(self, launcher_path, highway_pursuit_path, dll_path, options):
@@ -201,9 +201,12 @@ class HighwayPursuitClient:
         # Server will now connect to the shared memory
         self._sync_wait_for_serv()
 
-    def reset(self):
+    def reset(self, new_game: bool):
         """
         Requests to reset the environment, waits for the server and retrieves the initial observation.
+        
+        Args:
+            new_game (bool): if true, starts a new game, else respawns the player.
 
         Returns:
             tuple: A tuple containing:
@@ -212,7 +215,11 @@ class HighwayPursuitClient:
         """
         
         # Query
-        self._write_instruction(Instruction(Instruction.RESET))
+        if(new_game):
+            self._write_instruction(Instruction(Instruction.RESET_NEW_GAME))
+        else:
+            self._write_instruction(Instruction(Instruction.RESET_NEW_LIFE))
+
         self._sync_wait_for_serv()
         # Result
         info: Info = Info.from_buffer_copy(self._info_sm.buf)

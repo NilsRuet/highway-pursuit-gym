@@ -16,7 +16,7 @@ namespace HighwayPursuitServer.Server
         private readonly float TICKS_PER_FRAME = Stopwatch.Frequency / FPS;
         private readonly float TICKS_PER_MS = Stopwatch.Frequency / 1000.0f;
         const long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
-        const int GAME_TIMEOUT = 2000; // results in an error if the game fails to update
+        const int GAME_TIMEOUT = 10000; // results in an error if the game fails to update
         const int METRICS_UPDATE_FREQUENCY = (int)(FPS * 30); // update info every 30s of gameplay
         const int LOG_FREQUENCY = (int)(FPS * 60); // update metrics every minute of gameplay
 
@@ -140,8 +140,11 @@ namespace HighwayPursuitServer.Server
         {
             switch (code)
             {
-                case InstructionCode.RESET:
-                    Reset();
+                case InstructionCode.RESET_NEW_LIFE:
+                    Reset(false);
+                    break;
+                case InstructionCode.RESET_NEW_GAME:
+                    Reset(true);
                     break;
                 case InstructionCode.STEP:
                     // Return an error if step is called without reset (player dead)
@@ -172,19 +175,23 @@ namespace HighwayPursuitServer.Server
             }
         }
 
-        private void Reset()
+        private void Reset(bool startNewGame)
         {
-            // Reset the episode
+            // Force new game the first time
             if (!_firstEpisodeInitialized)
             {
                 // New game is called on the first episode because it fully resets the game state
                 _episodeService.NewGame();
                 // Initialize the metrics
                 _currentInfo = new Info(0.0f, ComputeMemoryUsage());
-                
                 _firstEpisodeInitialized = true;
             }
-            // Respawn the player if last step has not done it naturally (if the client called reset without waiting for termination/truncation)
+            // Start a new game
+            else if (startNewGame)
+            {
+                _episodeService.NewGame();
+            }
+            // The game respawns the player (new life) naturally unless the last episode wasn't terminated
             else if (!_lastStepTermination.IsDone())
             {
                 _episodeService.NewLife();
@@ -267,10 +274,11 @@ namespace HighwayPursuitServer.Server
             while (skippedFrames < _options.frameskip && !_lastStepTermination.IsDone())
             {
                 // Wrapper is here for the real time option
-                if(frameWrapper == null)
+                if (frameWrapper == null)
                 {
                     processOneFrame();
-                } else
+                }
+                else
                 {
                     frameWrapper(processOneFrame);
                 }
