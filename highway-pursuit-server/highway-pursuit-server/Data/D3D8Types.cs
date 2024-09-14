@@ -103,6 +103,16 @@ namespace HighwayPursuitServer.Data
         D3DLOCK_NO_DIRTY_UPDATE = 0x00008000L
     }
 
+    [Flags]
+    public enum DISCL_FLAGS : uint
+    {
+        DISCL_EXCLUSIVE = 0x00000001,
+        DISCL_NONEXCLUSIVE = 0x00000002,
+        DISCL_FOREGROUND = 0x00000004,
+        DISCL_BACKGROUND = 0x00000008,
+        DISCL_NOWINKEY = 0x00000010
+    }
+     
     public enum D3DFORMAT
     {
         D3DFMT_UNKNOWN = 0,
