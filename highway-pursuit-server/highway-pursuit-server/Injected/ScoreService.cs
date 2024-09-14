@@ -27,6 +27,12 @@ namespace HighwayPursuitServer.Injected
             return scoreDelta;
         }
 
+        public void ResetScore()
+        {
+            _lastScore = 0;
+            _newScore = 0;
+        }
+
         #region Hooking
         private void RegisterHooks()
         {
@@ -39,12 +45,6 @@ namespace HighwayPursuitServer.Injected
         void SetScore_Hook(int score)
         {
             SetScore(score);
-            // A reset happened, we set back last score to 0
-            if (score == 0)
-            {
-                _lastScore = 0;
-            }
-
             _newScore = score;
         }
         #endregion
@@ -59,6 +59,4 @@ namespace HighwayPursuitServer.Injected
         #endregion
         #endregion
     }
-
-    //void __cdecl setScore(int param_1)
 }

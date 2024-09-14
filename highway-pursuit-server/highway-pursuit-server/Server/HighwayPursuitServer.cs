@@ -181,7 +181,7 @@ namespace HighwayPursuitServer.Server
             if (!_firstEpisodeInitialized)
             {
                 // New game is called on the first episode because it fully resets the game state
-                _episodeService.NewGame();
+                SafeNewGame();
                 // Initialize the metrics
                 _currentInfo = new Info(0.0f, ComputeMemoryUsage());
                 _firstEpisodeInitialized = true;
@@ -189,7 +189,7 @@ namespace HighwayPursuitServer.Server
             // Start a new game
             else if (startNewGame)
             {
-                _episodeService.NewGame();
+                SafeNewGame();
             }
             // The game respawns the player (new life) naturally unless the last episode wasn't terminated
             else if (!_lastStepTermination.IsDone())
@@ -206,6 +206,18 @@ namespace HighwayPursuitServer.Server
             // Return state/info
             _renderingService.Screenshot(_communicationManager.WriteObservationBuffer);
             _communicationManager.WriteInfoBuffer(_currentInfo);
+        }
+
+        private void SafeNewGame()
+        {
+            // Ideally you could detect that the score goes back to zero automatically by hooking set score
+            // And it would avoid having to call ResetScore by hand.
+            // HOWEVER, easy hook works in such a way that your own hook won't be called if the call originates from your code.
+            // It means the hooks stop working when calling a native function (here, new game).
+            // This is both annoying to work around and generates bugs that are hard to identify
+            // TLDR: don't use easy hook for modding!
+            _episodeService.NewGame();
+            _scoreService.ResetScore();
         }
 
         // Game update that is lengthened to last one frame of the specified FPS
