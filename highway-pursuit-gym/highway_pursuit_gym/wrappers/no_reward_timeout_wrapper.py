@@ -3,7 +3,7 @@ import gymnasium as gym
 class NoRewardTimeoutWrapper(gym.Wrapper):
     def __init__(self, env, timeout):
         """
-        Wrapper to truncate episodes if no reward is received for a certain number of frames.
+        Wrapper to truncate episodes if no reward is received for a certain number of steps.
 
         Args:
             env (gym.Env): The environment to wrap.

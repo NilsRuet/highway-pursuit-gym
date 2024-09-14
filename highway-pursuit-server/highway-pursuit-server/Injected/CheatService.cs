@@ -22,13 +22,13 @@ namespace HighwayPursuitServer.Injected
         #region Hooking
         private void RegisterHooks()
         {
-            IntPtr getLifeCountPtr = new IntPtr(_hookManager.GetModuleBase().ToInt32() + MemoryAdresses.GET_LIFE_COUNT_OFFSET);
-            GetLifeCount = Marshal.GetDelegateForFunctionPointer<GetLifeCount_delegate>(getLifeCountPtr);
-            _hookManager.RegisterHook(getLifeCountPtr, new GetLifeCount_delegate(GetLifeCount_Hook));
+            IntPtr getLivesPtr = new IntPtr(_hookManager.GetModuleBase().ToInt32() + MemoryAdresses.GET_LIVES_OFFSET);
+            GetLives = Marshal.GetDelegateForFunctionPointer<GetLives_delegate>(getLivesPtr);
+            _hookManager.RegisterHook(getLivesPtr, new GetLives_delegate(GetLives_Hook));
         }
 
         #region hooks
-        byte GetLifeCount_Hook()
+        byte GetLives_Hook()
         {
             return HighwayPursuitConstants.CHEATED_CONSTANT_LIVES;
         }
@@ -37,11 +37,11 @@ namespace HighwayPursuitServer.Injected
         #region delegates
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
         [return: MarshalAs(UnmanagedType.I1)]
-        delegate byte GetLifeCount_delegate();
+        delegate byte GetLives_delegate();
         #endregion
 
         #region original function pointers
-        static GetLifeCount_delegate GetLifeCount;
+        static GetLives_delegate GetLives;
         #endregion
         #endregion
     }

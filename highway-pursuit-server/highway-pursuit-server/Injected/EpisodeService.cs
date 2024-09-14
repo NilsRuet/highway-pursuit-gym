@@ -46,9 +46,9 @@ namespace HighwayPursuitServer.Injected
             IntPtr respawnPtr = new IntPtr(_hookManager.GetModuleBase().ToInt32() + MemoryAdresses.RESPAWN_OFFSET);
             Respawn = Marshal.GetDelegateForFunctionPointer<Respawn_delegate>(respawnPtr);
 
-            IntPtr setLifeCountPtr = new IntPtr(_hookManager.GetModuleBase().ToInt32() + MemoryAdresses.SET_LIFE_COUNT_OFFSET);
-            SetLifeCount = Marshal.GetDelegateForFunctionPointer<SetLifeCount_delegate>(setLifeCountPtr);
-            _hookManager.RegisterHook(setLifeCountPtr, new SetLifeCount_delegate(SetLifeCount_Hook));
+            IntPtr setLivesPtr = new IntPtr(_hookManager.GetModuleBase().ToInt32() + MemoryAdresses.SET_LIVES_OFFSET);
+            SetLives = Marshal.GetDelegateForFunctionPointer<SetLives_delegate>(setLivesPtr);
+            _hookManager.RegisterHook(setLivesPtr, new SetLives_delegate(SetLives_Hook));
         }
 
         #region delegates
@@ -59,19 +59,19 @@ namespace HighwayPursuitServer.Injected
         delegate void Respawn_delegate(byte isNotInitial);
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
-        delegate void SetLifeCount_delegate(byte lifeCount);
+        delegate void SetLives_delegate(byte lives);
         #endregion
 
         #region original function pointers
         static Reset_delegate Reset;
         static Respawn_delegate Respawn;
-        static SetLifeCount_delegate SetLifeCount;
+        static SetLives_delegate SetLives;
         #endregion
 
         #region hooks
-        void SetLifeCount_Hook(byte value)
+        void SetLives_Hook(byte value)
         {
-            SetLifeCount(value);
+            SetLives(value);
             // If one life was lost
             if(value == HighwayPursuitConstants.CHEATED_CONSTANT_LIVES - 1)
             {
