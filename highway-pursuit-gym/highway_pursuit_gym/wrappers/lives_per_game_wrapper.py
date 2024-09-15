@@ -12,17 +12,18 @@ class LivesPerGameWrapper(gym.Wrapper):
             lives (int): The amount of retries per game.
         """
         super(LivesPerGameWrapper, self).__init__(env)
-        self._max_lives = lives
-        self._current_lives = lives
+        self._max_lives = max(lives, 1) # Max lives can't be 0 or less
+        self._respawns_left = self._max_lives
 
     def reset(self, seed=None, options: dict = None):
         # Allow respawning while some lives are left
-        if(self._current_lives > 0):
-            self._current_lives -= 1
+        if(self._respawns_left > 0):
+            self._respawns_left -= 1
             new_game = False
         # Otherwise start a new game
         else:
-            self._current_lives = self._max_lives
+            # -1 because the current reset call counts as a respawn
+            self._respawns_left = self._max_lives - 1
             new_game = True
 
         # Create the options dict if not provided
