@@ -28,17 +28,13 @@ class ChannelsAsStripsWrapper(gym.ObservationWrapper):
         )
 
     def observation(self, obs):
-        new_obs = np.zeros(self.new_shape)
         width = self.new_shape[1]
+        new_obs = np.zeros((obs.shape[0], width, self.n_channels), dtype=obs.dtype)
+
         for channel_i in range(self.n_channels):
-            # Copy the strips matching the given channel
+            # Copy matching pixels to the new_obs
             channel = obs[:, channel_i::self.n_channels, channel_i]
+            current_width = channel.shape[1]
+            new_obs[:, :current_width, channel_i] = channel
 
-            # pad if necessary
-            if(channel.shape[1] < width):
-                padding_width = width - channel.shape[1]
-                padding = np.zeros((channel.shape[0], padding_width))
-                channel = np.concatenate((channel, padding), axis=1)
-
-            new_obs[:,:,channel_i] = channel
         return new_obs
