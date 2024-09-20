@@ -21,12 +21,12 @@ namespace HighwayPursuitLauncher
     {
         Success = 0,
         InvalidArgs = 1,
-        InjectionFailed = 2
+        InjectionFailed = 2,
+        UnknownError = 3,
     };
 
     // Function declarations
     static int launch(int argc, char* argv[]);
     static bool processArgs(int argc, char* argv[], std::string& targetExe, std::string& targetDll);
     static bool tryParseResolution(const std::string& arg, unsigned int& width, unsigned int& height);
-    static void injectDLL(const std::string& targetExe, const std::string& targetDll);
 }

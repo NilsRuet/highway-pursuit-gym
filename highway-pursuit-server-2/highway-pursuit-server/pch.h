@@ -8,6 +8,8 @@
 #define PCH_H
 
 // ajouter les en-têtes à précompiler ici
+#include <iostream>
+#include <string.h>
 #include "framework.h"
 
 #endif //PCH_H

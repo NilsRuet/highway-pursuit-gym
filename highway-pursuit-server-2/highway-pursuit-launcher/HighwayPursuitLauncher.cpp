@@ -1,4 +1,5 @@
-#include "highway-pursuit-launcher.hpp"
+#include "HighwayPursuitLauncher.hpp"
+#include "Injection.hpp"
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
@@ -47,22 +48,19 @@ namespace HighwayPursuitLauncher
             bool renderEnabled;
             std::istringstream(std::string(argv[ARG_ENABLE_RENDERING])) >> std::boolalpha >> renderEnabled;
 
-            // Log the parameters TODO: how to pass to the dll
-            std::cout << "Executable: " << targetExe << "\n";
-            std::cout << "DLL: " << targetDll << "\n";
-            std::cout << "Real-time: " << isRealTime << "\n";
-            std::cout << "Frame skip: " << frameSkip << "\n";
-            std::cout << "Resolution: " << renderWidth << "x" << renderHeight << "\n";
-            std::cout << "Render enabled: " << renderEnabled << "\n";
 
             // Inject the DLL into the target process
-            injectDLL(targetExe, targetDll);
+            auto args = HighwayPursuitArgs(isRealTime, frameSkip, renderWidth, renderHeight, renderEnabled, argv[ARG_SHARED_RESOURCES_PREFIX]);
+            if (!Injection::CreateAndInject(targetExe, targetDll, args))
+            {
+                return ExitCode::InjectionFailed;
+            }
 
         }
         catch (const std::exception& e)
         {
             std::cerr << "Injection failed: " << e.what() << std::endl;
-            return ExitCode::InjectionFailed;
+            return ExitCode::UnknownError;
         }
 
         return ExitCode::Success;
@@ -118,7 +116,7 @@ namespace HighwayPursuitLauncher
             return false;
         }
 
-        // Additional argument validation can go here
+        // Check args are not empty
         if (std::string(argv[ARG_REAL_TIME]).empty() || std::string(argv[ARG_FRAME_SKIP]).empty() || std::string(argv[ARG_RESOLUTION]).empty())
         {
             std::cerr << "empty args: real_time/frame_skip/resolution" << std::endl;
@@ -126,16 +124,5 @@ namespace HighwayPursuitLauncher
         }
 
         return true;
-    }
-
-    // Example InjectDLL function (you need to implement the actual injection here)
-    static void injectDLL(const std::string& targetExe, const std::string& targetDll)
-    {
-        // This is a placeholder for DLL injection logic.
-        // Implement your CreateRemoteThread/LoadLibraryA code or use MinHook, etc.
-
-        std::cout << "Injecting " << targetDll << " into " << targetExe << std::endl;
-        // Call your injection logic here
-        // Example: CreateRemoteThread / LoadLibraryA etc.
     }
 }
