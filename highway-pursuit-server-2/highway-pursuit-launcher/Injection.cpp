@@ -156,6 +156,7 @@ namespace Injection
 
         // Clean up
         FreeLibrary(hModule);
+        TerminateProcess(pi.hProcess, 0);
         CloseHandle(pi.hThread);
         CloseHandle(pi.hProcess);
         return true;
