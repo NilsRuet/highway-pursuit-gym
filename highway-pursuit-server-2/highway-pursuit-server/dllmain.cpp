@@ -1,7 +1,6 @@
 // dllmain.cpp : Définit le point d'entrée de l'application DLL.
 #include "pch.h"
 #include "shared/HighwayPursuitArgs.hpp"
-#include <windows.h>
 
 // This is an exported function that will be called by the injector
 extern "C" __declspec(dllexport) void EntryPoint(LPVOID lpParam)
