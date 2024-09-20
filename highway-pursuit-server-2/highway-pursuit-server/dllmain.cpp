@@ -1,12 +1,20 @@
-// dllmain.cpp : Définit le point d'entrée de l'application DLL.
 #include "pch.h"
 #include "shared/HighwayPursuitArgs.hpp"
 
-// This is an exported function that will be called by the injector
-extern "C" __declspec(dllexport) void EntryPoint(LPVOID lpParam)
+// Called by the injector to initialize all hooks/services
+extern "C" __declspec(dllexport) void Initialize(LPVOID lpParam)
 {
     HighwayPursuitArgs args = HighwayPursuitArgs();
     std::memcpy(&args, lpParam, sizeof(HighwayPursuitArgs));
+    //TODO: all hooks will be injected in this function
+    MessageBoxA(NULL,"Initialize", "DLL Notification", MB_OK);
+}
+
+// Called by the injector to run the server once the process has been woken up
+extern "C" __declspec(dllexport) void Run(LPVOID lpParam)
+{
+    //TODO: the main server thread will start here
+    MessageBoxA(NULL, "Run", "DLL Notification", MB_OK);
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,

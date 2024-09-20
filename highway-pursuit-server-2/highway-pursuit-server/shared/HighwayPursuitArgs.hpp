@@ -21,7 +21,6 @@ class HighwayPursuitArgs
         {
             this->sharedResourcesPrefix[0] = '\0';
         }
-            
 
         HighwayPursuitArgs(bool realTime, int skip, int width, int height, bool enableRender, const char* sharedResources)
             : isRealTime(realTime),
