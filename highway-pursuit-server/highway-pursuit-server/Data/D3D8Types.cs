@@ -14,23 +14,17 @@ namespace HighwayPursuitServer.Data
         // Only the code is informative, so we mask with FFFF
         public D3DERR(uint errCode) : base($"D3DERR: code {errCode & 0xFFFF}") { }
     }
-
-    [StructLayout(LayoutKind.Sequential)]
-    public struct RECT
+    struct RECT
     {
-        public int left;
-        public int top;
-        public int right;
-        public int bottom;
+        int left;
+        int top;
+        int right;
+        int bottom;
 
-        public RECT(int left, int top, int right, int bottom)
-        {
-            this.left = left;
-            this.top = top;
-            this.right = right;
-            this.bottom = bottom;
-        }
-    }
+        // Constructor
+        RECT(int l, int t, int r, int b)
+            : left(l), top(t), right(r), bottom(b) { }
+    };
 
     [StructLayout(LayoutKind.Sequential)]
     public struct D3DLOCKED_RECT

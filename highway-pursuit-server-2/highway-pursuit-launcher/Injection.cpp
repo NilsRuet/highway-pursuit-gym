@@ -3,6 +3,8 @@
 #include <shlwapi.h>
 #include <psapi.h>
 
+using namespace Shared;
+
 namespace Injection
 {
     namespace

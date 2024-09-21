@@ -1,5 +1,10 @@
 #include "pch.h"
-#include "shared/HighwayPursuitArgs.hpp"
+#include "Shared/HighwayPursuitArgs.hpp"
+#include "Data/D3D8.hpp"
+#include "Data/ServerTypes.hpp"
+#include "Data/Remote.hpp"
+
+using namespace Shared;
 
 // Called by the injector to initialize all hooks/services
 extern "C" __declspec(dllexport) void Initialize(LPVOID lpParam)

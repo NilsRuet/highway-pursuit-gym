@@ -24,8 +24,20 @@
     <ClInclude Include="pch.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="shared\HighwayPursuitArgs.hpp">
+    <ClInclude Include="Shared\HighwayPursuitArgs.hpp">
       <Filter>shared</Filter>
+    </ClInclude>
+    <ClInclude Include="Injected\MemoryAddresses.hpp">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\D3D8.hpp">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\Remote.hpp">
+      <Filter>Fichiers d%27en-tête</Filter>
+    </ClInclude>
+    <ClInclude Include="Data\ServerTypes.hpp">
+      <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -34,9 +46,6 @@
     </ClCompile>
     <ClCompile Include="pch.cpp">
       <Filter>Fichiers sources</Filter>
-    </ClCompile>
-    <ClCompile Include="shared\HighwayPursuitArgs.cpp">
-      <Filter>shared</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

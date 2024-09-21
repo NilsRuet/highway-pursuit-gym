@@ -50,7 +50,7 @@ namespace HighwayPursuitLauncher
 
 
             // Inject the DLL into the target process
-            auto args = HighwayPursuitArgs(isRealTime, frameSkip, renderWidth, renderHeight, renderEnabled, argv[ARG_SHARED_RESOURCES_PREFIX]);
+            auto args = Shared::HighwayPursuitArgs(isRealTime, frameSkip, renderWidth, renderHeight, renderEnabled, argv[ARG_SHARED_RESOURCES_PREFIX]);
             if (!Injection::CreateAndInject(targetExe, targetDll, args))
             {
                 return ExitCode::InjectionFailed;

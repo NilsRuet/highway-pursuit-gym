@@ -1,8 +1,11 @@
 #pragma once
-#pragma pack(push, 1)
-class HighwayPursuitArgs
+#include "../pch.h"
+
+namespace Shared
 {
-    public:
+    #pragma pack(push, 1)
+    struct HighwayPursuitArgs
+    {
         static const size_t prefixMaxSize = 256;
 
         bool isRealTime;
@@ -32,5 +35,6 @@ class HighwayPursuitArgs
             strncpy_s(this->sharedResourcesPrefix, sharedResources, prefixMaxSize - 1);
             this->sharedResourcesPrefix[prefixMaxSize - 1] = '\0';  // Avoid buffer overflow
         }
-};
-#pragma pack(pop)
+    };
+    #pragma pack(pop)
+}

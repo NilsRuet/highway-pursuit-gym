@@ -6,5 +6,5 @@
 
 namespace Injection
 {
-    bool CreateAndInject(const std::string& targetExe, const std::string& targetDll, const HighwayPursuitArgs& args);
+    bool CreateAndInject(const std::string& targetExe, const std::string& targetDll, const Shared::HighwayPursuitArgs& args);
 }
