@@ -142,21 +142,51 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="CommunicationManager.hpp" />
+    <ClInclude Include="HookManager.hpp" />
+    <ClInclude Include="Injected\EpisodeService.hpp" />
+    <ClInclude Include="Injected\CheatService.hpp" />
     <ClInclude Include="Data\D3D8.hpp" />
     <ClInclude Include="Data\ServerTypes.hpp" />
     <ClInclude Include="Data\Remote.hpp" />
     <ClInclude Include="framework.h" />
+    <ClInclude Include="HighwayPursuitServer.hpp" />
     <ClInclude Include="Injected\MemoryAddresses.hpp" />
+    <ClInclude Include="Injected\InputService.hpp" />
+    <ClInclude Include="Injected\RenderingService.hpp" />
+    <ClInclude Include="Injected\ScoreService.hpp" />
     <ClInclude Include="Shared\HighwayPursuitArgs.hpp" />
     <ClInclude Include="pch.h" />
+    <ClInclude Include="Injected\UpdateService.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CommunicationManager.cpp" />
+    <ClCompile Include="HookManager.cpp" />
+    <ClCompile Include="Injected\EpisodeService.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="Injected\CheatService.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../pch.h</PrecompiledHeaderFile>
+    </ClCompile>
     <ClCompile Include="dllmain.cpp" />
+    <ClCompile Include="HighwayPursuitServer.cpp" />
+    <ClCompile Include="Injected\InputService.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../pch.h</PrecompiledHeaderFile>
+    </ClCompile>
     <ClCompile Include="pch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="Injected\RenderingService.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="Injected\ScoreService.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="Injected\UpdateService.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../pch.h</PrecompiledHeaderFile>
     </ClCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -50,7 +50,7 @@ namespace HighwayPursuitLauncher
 
 
             // Inject the DLL into the target process
-            auto args = Shared::HighwayPursuitArgs(isRealTime, frameSkip, renderWidth, renderHeight, renderEnabled, argv[ARG_SHARED_RESOURCES_PREFIX]);
+            auto args = Shared::HighwayPursuitArgs(isRealTime, frameSkip, renderWidth, renderHeight, renderEnabled, argv[ARG_LOG_DIR_PATH], argv[ARG_SHARED_RESOURCES_PREFIX]);
             if (!Injection::CreateAndInject(targetExe, targetDll, args))
             {
                 return ExitCode::InjectionFailed;
@@ -117,9 +117,13 @@ namespace HighwayPursuitLauncher
         }
 
         // Check args are not empty
-        if (std::string(argv[ARG_REAL_TIME]).empty() || std::string(argv[ARG_FRAME_SKIP]).empty() || std::string(argv[ARG_RESOLUTION]).empty())
+        if (std::string(argv[ARG_REAL_TIME]).empty()
+            || std::string(argv[ARG_FRAME_SKIP]).empty()
+            || std::string(argv[ARG_RESOLUTION]).empty()
+            || std::string(argv[ARG_LOG_DIR_PATH]).empty()
+            )
         {
-            std::cerr << "empty args: real_time/frame_skip/resolution" << std::endl;
+            std::cerr << "empty args: real_time/frame_skip/resolution/log_dir" << std::endl;
             return false;
         }
 

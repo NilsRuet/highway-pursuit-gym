@@ -1,9 +1,6 @@
 #include "pch.h"
 #include "Shared/HighwayPursuitArgs.hpp"
-#include "Data/D3D8.hpp"
-#include "Data/ServerTypes.hpp"
-#include "Data/Remote.hpp"
-
+#include "HighwayPursuitServer.hpp"
 using namespace Shared;
 
 // Called by the injector to initialize all hooks/services
@@ -12,7 +9,11 @@ extern "C" __declspec(dllexport) void Initialize(LPVOID lpParam)
     HighwayPursuitArgs args = HighwayPursuitArgs();
     std::memcpy(&args, lpParam, sizeof(HighwayPursuitArgs));
     //TODO: all hooks will be injected in this function
-    MessageBoxA(NULL,"Initialize", "DLL Notification", MB_OK);
+    std::string msg = "Initialize " + std::string(args.logDirPath);
+    MessageBoxA(NULL, msg.c_str(), "DLL Notification", MB_OK);
+    Data::ServerParams::RenderParams renderParams(args.renderWidth, args.renderHeight, args.renderEnabled);
+    Data::ServerParams options(args.isRealTime, args.frameSkip, renderParams, args.logDirPath, args.sharedResourcesPrefix);
+    HighwayPursuitServer server(options);
 }
 
 // Called by the injector to run the server once the process has been woken up

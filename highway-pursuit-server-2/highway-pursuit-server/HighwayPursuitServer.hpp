@@ -1,0 +1,48 @@
+#pragma once
+#include "Data/ServerTypes.hpp"
+#include "Data/Remote.hpp"
+#include "CommunicationManager.hpp"
+#include "HookManager.hpp"
+#include "Injected/CheatService.hpp"
+#include "Injected/EpisodeService.hpp"
+#include "Injected/InputService.hpp"
+#include "Injected/RenderingService.hpp"
+#include "Injected/ScoreService.hpp"
+#include "Injected/UpdateService.hpp"
+
+using namespace Injected;
+
+class HighwayPursuitServer
+{
+    public:
+        static constexpr float FPS = 60.0f;
+        static constexpr long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
+        static constexpr int GAME_TIMEOUT = 10000; // results in an error if the game fails to update
+        static constexpr int METRICS_UPDATE_FREQUENCY = static_cast<int>(FPS * 30); // update info every 30s of gameplay
+        static constexpr int LOG_FREQUENCY = static_cast<int>(FPS * 60); // update metrics every minute of gameplay
+
+        HighwayPursuitServer(const Data::ServerParams& options);
+
+    private:
+        const float TICKS_PER_FRAME;
+        const float TICKS_PER_MS;
+        const Data::ServerParams _options; // Game options
+        std::unique_ptr<CommunicationManager> _communicationManager;
+        std::unique_ptr<HookManager> _hookManager;
+        std::unique_ptr<EpisodeService> _episodeService;
+        std::unique_ptr<UpdateService> _updateService;
+        std::unique_ptr<InputService> _inputService;
+        std::unique_ptr<RenderingService> _renderingService;
+        std::unique_ptr<ScoreService> _scoreService;
+        std::unique_ptr<CheatService> _cheatService;
+
+        std::condition_variable _lockUpdatePool; // Update thread waits for this
+        std::condition_variable _lockServerPool; // Server thread waits for this
+        std::atomic<bool> _firstEpisodeInitialized; // Using atomic for thread safety
+        std::atomic<bool> _serverTerminated;        // Using atomic for thread safety
+        long _totalEllapsedFrames;
+        Data::Termination _lastStepTermination;
+        Data::Info _currentInfo;
+        long _startTick;
+};
+

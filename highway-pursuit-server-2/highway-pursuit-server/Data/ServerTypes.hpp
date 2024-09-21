@@ -69,4 +69,64 @@ namespace Data
             }
         }
     };
+
+
+    struct ServerParams
+    {
+        struct RenderParams
+        {
+            const uint32_t renderWidth;
+            const uint32_t renderHeight;
+            const bool renderingEnabled;
+
+            RenderParams(uint32_t renderWidth, uint32_t renderHeight, bool renderingEnabled)
+                : renderWidth(renderWidth), renderHeight(renderHeight), renderingEnabled(renderingEnabled)
+            {
+            }
+        };
+
+        static constexpr const char* serverMutexId = "a";
+        static constexpr const char* clientMutexId = "b";
+        static constexpr const char* returnCodeMemoryId = "0";
+        static constexpr const char* serverInfoMemoryId = "1";
+        static constexpr const char* instructionMemoryId = "2";
+        static constexpr const char* observationMemoryId = "3";
+        static constexpr const char* infoMemoryId = "4";
+        static constexpr const char* rewardMemoryId = "5";
+        static constexpr const char* actionMemoryId = "6";
+        static constexpr const char* terminationMemoryId = "7";
+
+        const bool isRealTime;
+        const int frameskip;
+        const RenderParams renderParams;
+        const std::string logDirectory;
+        const std::string serverMutexName;
+        const std::string clientMutexName;
+        const std::string returnCodeMemoryName;
+        const std::string serverInfoMemoryName;
+        const std::string instructionMemoryName;
+        const std::string observationMemoryName;
+        const std::string infoMemoryName;
+        const std::string rewardMemoryName;
+        const std::string actionMemoryName;
+        const std::string terminationMemoryName;
+
+        ServerParams(bool isRealTime, int frameskip, const RenderParams& renderOptions, const std::string& logDirectoryPath, const std::string& sharedResourcesPrefix)
+            : isRealTime(isRealTime),
+            frameskip(frameskip),
+            renderParams(renderOptions),
+            logDirectory(logDirectoryPath),
+            serverMutexName(sharedResourcesPrefix + serverMutexId),
+            clientMutexName(sharedResourcesPrefix + clientMutexId),
+            returnCodeMemoryName(sharedResourcesPrefix + returnCodeMemoryId),
+            serverInfoMemoryName(sharedResourcesPrefix + serverInfoMemoryId),
+            instructionMemoryName(sharedResourcesPrefix + instructionMemoryId),
+            observationMemoryName(sharedResourcesPrefix + observationMemoryId),
+            infoMemoryName(sharedResourcesPrefix + infoMemoryId),
+            rewardMemoryName(sharedResourcesPrefix + rewardMemoryId),
+            actionMemoryName(sharedResourcesPrefix + actionMemoryId),
+            terminationMemoryName(sharedResourcesPrefix + terminationMemoryId)
+        {
+        }
+    };
 }
