@@ -8,18 +8,20 @@ extern "C" __declspec(dllexport) void Initialize(LPVOID lpParam)
 {
     HighwayPursuitArgs args = HighwayPursuitArgs();
     std::memcpy(&args, lpParam, sizeof(HighwayPursuitArgs));
+
+    // Setup logger
+    HPLogger::SetLogDir(args.logDirPath);
+
+    // Setup hooks
     //TODO: all hooks will be injected in this function
-    std::string msg = "Initialize " + std::string(args.logDirPath);
-    MessageBoxA(NULL, msg.c_str(), "DLL Notification", MB_OK);
     Data::ServerParams::RenderParams renderParams(args.renderWidth, args.renderHeight, args.renderEnabled);
-    Data::ServerParams options(args.isRealTime, args.frameSkip, renderParams, args.logDirPath, args.sharedResourcesPrefix);
+    Data::ServerParams options(args.isRealTime, args.frameSkip, renderParams, args.sharedResourcesPrefix);
     HighwayPursuitServer server(options);
 }
 
 // Called by the injector to run the server once the process has been woken up
 extern "C" __declspec(dllexport) void Run(LPVOID lpParam)
 {
-    //TODO: the main server thread will start here
     MessageBoxA(NULL, "Run", "DLL Notification", MB_OK);
 }
 

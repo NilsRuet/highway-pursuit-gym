@@ -22,13 +22,14 @@ class HighwayPursuitServer
         static constexpr int LOG_FREQUENCY = static_cast<int>(FPS * 60); // update metrics every minute of gameplay
 
         HighwayPursuitServer(const Data::ServerParams& options);
+        ~HighwayPursuitServer();
 
     private:
         const float TICKS_PER_FRAME;
         const float TICKS_PER_MS;
         const Data::ServerParams _options; // Game options
         std::unique_ptr<CommunicationManager> _communicationManager;
-        std::unique_ptr<HookManager> _hookManager;
+        std::shared_ptr<HookManager> _hookManager;
         std::unique_ptr<EpisodeService> _episodeService;
         std::unique_ptr<UpdateService> _updateService;
         std::unique_ptr<InputService> _inputService;
@@ -36,8 +37,8 @@ class HighwayPursuitServer
         std::unique_ptr<ScoreService> _scoreService;
         std::unique_ptr<CheatService> _cheatService;
 
-        std::condition_variable _lockUpdatePool; // Update thread waits for this
-        std::condition_variable _lockServerPool; // Server thread waits for this
+        HANDLE _lockUpdatePool; // Update thread waits for this
+        HANDLE _lockServerPool; // Server thread waits for this
         std::atomic<bool> _firstEpisodeInitialized; // Using atomic for thread safety
         std::atomic<bool> _serverTerminated;        // Using atomic for thread safety
         long _totalEllapsedFrames;

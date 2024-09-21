@@ -1,5 +1,6 @@
 #pragma once
 #include "../pch.h"
+#include "MinHook.h"
 
 namespace Data
 {
@@ -13,6 +14,23 @@ namespace Data
         UNSUPPORTED_BACKBUFFER_FORMAT = 4,
         UNKNOWN_ACTION = 5,
         ENVIRONMENT_NOT_RESET = 6,
+    };
+
+    class MinHookException : public std::runtime_error
+    {
+    public:
+        const MH_STATUS code;
+
+        MinHookException(MH_STATUS code)
+            : std::runtime_error(FormatErrorMessage(code)), code(code) {}
+
+    private:
+        static std::string FormatErrorMessage(MH_STATUS code)
+        {
+            std::ostringstream oss;
+            oss << "Highway pursuit server error: 0x" << static_cast<int>(code) << " " << static_cast<int>(code);
+            return oss.str();
+        }
     };
 
     class HighwayPursuitException : public std::runtime_error
@@ -99,7 +117,6 @@ namespace Data
         const bool isRealTime;
         const int frameskip;
         const RenderParams renderParams;
-        const std::string logDirectory;
         const std::string serverMutexName;
         const std::string clientMutexName;
         const std::string returnCodeMemoryName;
@@ -111,11 +128,10 @@ namespace Data
         const std::string actionMemoryName;
         const std::string terminationMemoryName;
 
-        ServerParams(bool isRealTime, int frameskip, const RenderParams& renderOptions, const std::string& logDirectoryPath, const std::string& sharedResourcesPrefix)
+        ServerParams(bool isRealTime, int frameskip, const RenderParams& renderOptions, const std::string& sharedResourcesPrefix)
             : isRealTime(isRealTime),
             frameskip(frameskip),
             renderParams(renderOptions),
-            logDirectory(logDirectoryPath),
             serverMutexName(sharedResourcesPrefix + serverMutexId),
             clientMutexName(sharedResourcesPrefix + clientMutexId),
             returnCodeMemoryName(sharedResourcesPrefix + returnCodeMemoryId),
