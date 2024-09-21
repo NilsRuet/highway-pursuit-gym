@@ -24,7 +24,13 @@ HighwayPursuitServer::HighwayPursuitServer(const Data::ServerParams& options)
 
     // init services
     _hookManager = std::make_shared<HookManager>();
-    _updateService = std::make_unique<UpdateService>(_hookManager, options.isRealTime, _lockServerPool, _lockUpdatePool, FPS, PERFORMANCE_COUNTER_FREQUENCY);
+
+    LARGE_INTEGER frequency;
+    frequency.QuadPart = PERFORMANCE_COUNTER_FREQUENCY;
+    _updateService = std::make_unique<UpdateService>(_hookManager, options.isRealTime, _lockServerPool, _lockUpdatePool, FPS, frequency);
+
+    // Enable hooks
+    _hookManager->EnableHooks();
 }
 
 HighwayPursuitServer::~HighwayPursuitServer()

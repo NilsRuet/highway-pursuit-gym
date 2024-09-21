@@ -28,7 +28,7 @@ namespace Data
         static std::string FormatErrorMessage(MH_STATUS code)
         {
             std::ostringstream oss;
-            oss << "Highway pursuit server error: 0x" << static_cast<int>(code) << " " << static_cast<int>(code);
+            oss << "Highway pursuit MinHook error: 0x" << std::setfill('0') << std::hex << static_cast<int>(code);
             return oss.str();
         }
     };
@@ -45,7 +45,7 @@ namespace Data
         static std::string FormatErrorMessage(ErrorCode code)
         {
             std::ostringstream oss;
-            oss << "Highway pursuit server error: 0x" << static_cast<int>(code) << " " << static_cast<int>(code);
+            oss << "Highway pursuit server error: 0x" << std::setfill('0') << std::hex << static_cast<int>(code);
             return oss.str();
         }
     };

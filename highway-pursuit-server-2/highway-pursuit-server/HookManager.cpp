@@ -7,9 +7,9 @@ HookManager::HookManager()
 {
     MH_Initialize();
 
-    _moduleBase = GetModuleHandleA(nullptr); // base module
-    _d3d8Base = GetModuleHandleA(_d3d8ModuleName.c_str());
-    _dinputBase = GetModuleHandleA(_dinputModuleName.c_str());
+    _moduleBase = (uintptr_t)GetModuleHandleA(nullptr); // base module
+    _d3d8Base = (uintptr_t)GetModuleHandleA(_d3d8ModuleName.c_str());
+    _dinputBase = (uintptr_t)GetModuleHandleA(_dinputModuleName.c_str());
 
     if (!_d3d8Base)
     {
@@ -41,17 +41,17 @@ void HookManager::Release()
     MH_Uninitialize();
 }
 
-HMODULE HookManager::GetModuleBase() const
+uintptr_t HookManager::GetModuleBase() const
 {
     return _moduleBase;
 }
 
-HMODULE HookManager::GetD3D8Base() const
+uintptr_t HookManager::GetD3D8Base() const
 {
     return _d3d8Base;
 }
 
-HMODULE HookManager::GetDINPUTBase() const
+uintptr_t HookManager::GetDINPUTBase() const
 {
     return _dinputBase;
 }

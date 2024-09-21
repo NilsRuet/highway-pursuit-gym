@@ -3,6 +3,8 @@
 #include "HighwayPursuitServer.hpp"
 using namespace Shared;
 
+static std::unique_ptr<HighwayPursuitServer> serverPtr = nullptr;
+
 // Called by the injector to initialize all hooks/services
 extern "C" __declspec(dllexport) void Initialize(LPVOID lpParam)
 {
@@ -11,18 +13,30 @@ extern "C" __declspec(dllexport) void Initialize(LPVOID lpParam)
 
     // Setup logger
     HPLogger::SetLogDir(args.logDirPath);
-
-    // Setup hooks
-    //TODO: all hooks will be injected in this function
-    Data::ServerParams::RenderParams renderParams(args.renderWidth, args.renderHeight, args.renderEnabled);
-    Data::ServerParams options(args.isRealTime, args.frameSkip, renderParams, args.sharedResourcesPrefix);
-    HighwayPursuitServer server(options);
+    try
+    {
+        // Setup hooks
+        Data::ServerParams::RenderParams renderParams(args.renderWidth, args.renderHeight, args.renderEnabled);
+        Data::ServerParams options(args.isRealTime, args.frameSkip, renderParams, args.sharedResourcesPrefix);
+        serverPtr = std::make_unique<HighwayPursuitServer>(options);
+    }
+    catch (const std::runtime_error& e)
+    {
+        HPLogger::LogError(e.what());
+    }
 }
 
 // Called by the injector to run the server once the process has been woken up
 extern "C" __declspec(dllexport) void Run(LPVOID lpParam)
 {
-    MessageBoxA(NULL, "Run", "DLL Notification", MB_OK);
+    try
+    {
+        MessageBoxA(NULL, "Run", "DLL Notification", MB_OK);
+    }
+    catch (const std::runtime_error& e)
+    {
+        HPLogger::LogError(e.what());
+    }
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,
