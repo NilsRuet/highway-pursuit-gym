@@ -70,6 +70,12 @@ namespace HighwayPursuitServer
         private static void Log(string message, Level level)
         {
             if (!_init) return;
+#if !DEBUG
+            if(level == Level.Debug)
+            {
+                return;
+            }
+#endif
             try
             {
                 lock (loggerLock)
