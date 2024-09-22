@@ -55,6 +55,7 @@ namespace Data
     {
     public:
         static const uint32_t CHEATED_CONSTANT_LIVES = 3;
+        static const uint32_t ACTION_COUNT = 8;
     };
 
     struct BufferFormat

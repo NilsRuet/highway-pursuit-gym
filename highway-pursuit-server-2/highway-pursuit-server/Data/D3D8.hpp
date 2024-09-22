@@ -6,6 +6,8 @@ namespace Data
     typedef void IDirect3D8;
     typedef void IDirect3DDevice8;
     typedef void IDirect3DSurface8;
+    typedef void IDirectInputDevice8;
+
     typedef uint32_t D3DERR;
     constexpr uint32_t D3DERR_OK = 0;
     // Kind of an arbitrary choice to return a failing code if some D3D hook fails
@@ -55,6 +57,11 @@ namespace Data
         DISCL_BACKGROUND = 0x00000008,
         DISCL_NOWINKEY = 0x00000010
     };
+
+    inline DISCL_FLAGS operator|(DISCL_FLAGS a, DISCL_FLAGS b)
+    {
+        return static_cast<DISCL_FLAGS>(static_cast<uint32_t>(a) | static_cast<uint32_t>(b));
+    }
 
     enum D3DFORMAT
     {

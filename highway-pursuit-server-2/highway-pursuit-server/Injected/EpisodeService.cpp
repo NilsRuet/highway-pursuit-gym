@@ -1,6 +1,7 @@
 #include "../pch.h"
 #include "EpisodeService.hpp"
 #include "MemoryAddresses.hpp"
+
 namespace Injected
 {
     // Constructor
@@ -36,7 +37,7 @@ namespace Injected
     {
         EpisodeService::Instance = this;
 
-        // Update function
+        // Hooked functions
         uintptr_t base = _hookManager->GetModuleBase();
         LPVOID setLivesPtr = reinterpret_cast<LPVOID>(_hookManager->GetModuleBase() + Injected::MemoryAddresses::SET_LIVES_OFFSET);
         _hookManager->RegisterHook(setLivesPtr, &SetLives_StaticHook, &SetLives_Base);

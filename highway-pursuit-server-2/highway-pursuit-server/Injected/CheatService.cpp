@@ -16,7 +16,6 @@ namespace Injected
     {
         CheatService::Instance = this;
 
-        // Update function
         LPVOID getLivesPtr = reinterpret_cast<LPVOID>(_hookManager->GetModuleBase() + Injected::MemoryAddresses::GET_LIVES_OFFSET);
         _hookManager->RegisterHook(getLivesPtr, &GetLives_StaticHook, &GetLive_Base);
     }
