@@ -277,7 +277,7 @@ void HighwayPursuitServer::HandleMetrics()
     if (_totalEllapsedFrames % METRICS_UPDATE_FREQUENCY == 0)
     {
         ULONGLONG elapsedTicks = GetTickCount64() - _startTick;
-        auto tps = _totalEllapsedFrames / (elapsedTicks / 1000.0f);
+        auto tps = METRICS_UPDATE_FREQUENCY / (elapsedTicks / 1000.0f);
 
         float memorySize = ComputeMemoryUsage();
         _currentInfo = Info(tps, memorySize);
