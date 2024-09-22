@@ -1,6 +1,6 @@
 #include "../pch.h"
 #include "UpdateService.hpp"
-#include "../Injected/MemoryAddresses.hpp"
+#include "MemoryAddresses.hpp"
 
 namespace Injected
 {
@@ -56,7 +56,7 @@ namespace Injected
         }
 
         // Update function
-        LPVOID updatePtr = reinterpret_cast<LPVOID>(_hookManager->GetModuleBase() + Injected::MemoryAddresses::UPDATE_OFFSET);
+        LPVOID updatePtr = reinterpret_cast<LPVOID>(_hookManager->GetModuleBase() + MemoryAddresses::UPDATE_OFFSET);
         _hookManager->RegisterHook(updatePtr, &Update_StaticHook, &Update_Base);
     }
 

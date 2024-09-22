@@ -39,7 +39,7 @@ namespace Injected
 
         // Hooked functions
         uintptr_t base = _hookManager->GetModuleBase();
-        LPVOID setLivesPtr = reinterpret_cast<LPVOID>(_hookManager->GetModuleBase() + Injected::MemoryAddresses::SET_LIVES_OFFSET);
+        LPVOID setLivesPtr = reinterpret_cast<LPVOID>(_hookManager->GetModuleBase() + MemoryAddresses::SET_LIVES_OFFSET);
         _hookManager->RegisterHook(setLivesPtr, &SetLives_StaticHook, &SetLives_Base);
 
         // Other functions
