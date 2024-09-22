@@ -96,7 +96,7 @@ namespace Injected
         *cameraZoom = FULL_ZOOM;
     }
 
-    void RenderingService::Screenshot(std::function<void(void*, BufferFormat)> pixelDataHandler)
+    void RenderingService::Screenshot(std::function<void(void*, const BufferFormat&)> pixelDataHandler)
     {
         // Back buffer method
         IDirect3DSurface8* pBackBufferSurface;

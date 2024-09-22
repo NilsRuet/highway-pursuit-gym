@@ -89,16 +89,16 @@ namespace Injected
 
     void UpdateService::Update_Hook()
     {
-        /* if (_useSemaphores)
-         {
-             WaitForSingleObject(_lockUpdatePool, INFINITE);
-         }*/
+        if (_useSemaphores)
+        {
+            WaitForSingleObject(_lockUpdatePool, INFINITE);
+        }
         this->UpdateTime();
         Update_Base();
-        /* if (_useSemaphores)
-         {
-             ReleaseSemaphore(_lockServerPool, 1, nullptr);
-         }*/
+        if (_useSemaphores)
+        {
+            ReleaseSemaphore(_lockServerPool, 1, nullptr);
+        }
     }
 
     BOOL WINAPI UpdateService::QueryPerformanceFrequency_StaticHook(LARGE_INTEGER* lpFrequency)

@@ -31,7 +31,7 @@ extern "C" __declspec(dllexport) void Run(LPVOID lpParam)
 {
     try
     {
-        MessageBoxA(NULL, "Run", "DLL Notification", MB_OK);
+        serverPtr->Run();
     }
     catch (const std::runtime_error& e)
     {

@@ -16,8 +16,7 @@ HighwayPursuitServer::HighwayPursuitServer(const Data::ServerParams& options)
     TICKS_PER_MS = ticks_per_s / 1000.0f;
 
     // init communication manager
-    // _communicationManager = std::make_unique<CommunicationManager>(options);
-    _communicationManager = nullptr;
+    _communicationManager = std::make_unique<CommunicationManager>(options);
 
     // init update semaphores
     _lockUpdatePool = CreateSemaphore(nullptr, 0, 1, nullptr);
@@ -73,7 +72,7 @@ void HighwayPursuitServer::Run()
         while (!_serverTerminated)
         {
             auto handler = [this](InstructionCode code) { HandleInstruction(code); };
-            //_communicationManager->ExecuteOnInstruction(handler);
+            _communicationManager->ExecuteOnInstruction(handler);
         }
     }
     // Exception handling for the server thread
@@ -88,7 +87,6 @@ void HighwayPursuitServer::Run()
         HPLogger::LogException(e);
     }
     _hookManager->Release();
-    _communicationManager->Dispose();
 }
 
 void HighwayPursuitServer::WaitGameUpdate()
@@ -181,7 +179,7 @@ void HighwayPursuitServer::Reset(bool startNewGame)
 
     // Return state/info
     _renderingService->Screenshot(
-        [this](void* pixelData, BufferFormat format)
+        [this](void* pixelData, const BufferFormat& format)
         {
             _communicationManager->WriteObservationBuffer(pixelData, format);
         });
@@ -262,7 +260,7 @@ void HighwayPursuitServer::Step(std::function<void(std::function<void()>)> frame
 
     // Write return values
     _renderingService->Screenshot(
-        [this](void* pixelData, BufferFormat format)
+        [this](void* pixelData, const BufferFormat& format)
         {
             _communicationManager->WriteObservationBuffer(pixelData, format);
         });

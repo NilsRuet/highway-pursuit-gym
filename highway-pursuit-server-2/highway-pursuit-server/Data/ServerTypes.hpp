@@ -222,17 +222,6 @@ namespace Data
             }
         };
 
-        static constexpr const char* serverMutexId = "a";
-        static constexpr const char* clientMutexId = "b";
-        static constexpr const char* returnCodeMemoryId = "0";
-        static constexpr const char* serverInfoMemoryId = "1";
-        static constexpr const char* instructionMemoryId = "2";
-        static constexpr const char* observationMemoryId = "3";
-        static constexpr const char* infoMemoryId = "4";
-        static constexpr const char* rewardMemoryId = "5";
-        static constexpr const char* actionMemoryId = "6";
-        static constexpr const char* terminationMemoryId = "7";
-
         const bool isRealTime;
         const int frameskip;
         const RenderParams renderParams;
@@ -263,5 +252,17 @@ namespace Data
             terminationMemoryName(sharedResourcesPrefix + terminationMemoryId)
         {
         }
+
+    private:
+        static constexpr const char* serverMutexId = "a";
+        static constexpr const char* clientMutexId = "b";
+        static constexpr const char* returnCodeMemoryId = "0";
+        static constexpr const char* serverInfoMemoryId = "1";
+        static constexpr const char* instructionMemoryId = "2";
+        static constexpr const char* observationMemoryId = "3";
+        static constexpr const char* infoMemoryId = "4";
+        static constexpr const char* rewardMemoryId = "5";
+        static constexpr const char* actionMemoryId = "6";
+        static constexpr const char* terminationMemoryId = "7";
     };
 }

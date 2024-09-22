@@ -9,23 +9,20 @@ public:
     static constexpr uint32_t CLIENT_TIMEOUT = 15000; // Timeout in ms
 
     CommunicationManager(const ServerParams& args);
+    ~CommunicationManager();
 
     void Connect(const ServerInfo& serverInfo);
     void ExecuteOnInstruction(std::function<void(InstructionCode)> handler);
     std::vector<Input> ReadActions();
-    void WriteObservationBuffer(void* buffer, const BufferFormat& format);
+    void WriteObservationBuffer(void* observationData, const BufferFormat& format);
     void WriteInfoBuffer(const Info& info);
     void WriteRewardBuffer(const Reward& reward);
     void WriteTerminationBuffer(const Termination& termination);
-    void WriteOK();
+    void WriteACK();
     void WriteNonFatalError(const ErrorCode& code);
     void WriteException(const HighwayPursuitException& exception);
-    void Dispose();
 
 private:
-    void SyncOnClientQuery(void (*action)());
-    void* ConnectToSharedMemory(const std::string& name);
-
     ServerParams _args;
     ServerInfo _serverInfo;
 
@@ -42,6 +39,44 @@ private:
     void* _terminationSM;
 
     bool _cleanLastErrorOnNextRequest;
-    std::vector<std::shared_ptr<void>> _disposableResources;
+    std::vector<HANDLE> _fileMappings;
+    std::vector<LPVOID> _mapViews;
+
+    void SyncOnClientQuery(std::function<void()> onQuery);
+    LPVOID ConnectToSharedMemory(const std::string& name, DWORD size);
+    
+    template <typename T>
+    static void WriteToBuffer(const T& data, void* pBuffer)
+    {
+        if (pBuffer == nullptr)
+        {
+            throw std::runtime_error("Invalid buffer in WriteToBuffer");
+        }
+        T* pDest = reinterpret_cast<T*>(pBuffer);
+        *pDest = data;
+    }
+
+    template <typename T>
+    static T ReadFromBuffer(void* pBuffer)
+    {
+        if (pBuffer == nullptr)
+        {
+            throw std::runtime_error("Invalid buffer in ReadFromBuffer");
+        }
+        T* pSrc = reinterpret_cast<T*>(pBuffer);
+        T data = *pSrc;
+        return data;
+    }
+
+    template <typename T>
+    static void ReadArrayFromBuffer(std::vector<T>& returnBuffer, void* pBuffer, size_t count)
+    {
+        if (pBuffer == nullptr)
+        {
+            throw std::runtime_error("Invalid buffer in ReadArrayFromBuffer");
+        }
+        returnBuffer.resize(count);
+        std::memcpy(returnBuffer.data(), pBuffer, count * sizeof(T));
+    }
 };
 

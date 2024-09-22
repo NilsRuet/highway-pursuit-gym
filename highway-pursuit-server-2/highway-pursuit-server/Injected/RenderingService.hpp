@@ -21,7 +21,7 @@ namespace Injected
         BufferFormat GetBufferFormat();
         void SetFullscreenFlag(bool useFullscreen);
         void ResetZoomLevel();
-        void Screenshot(std::function<void(void*, BufferFormat)> pixelDataHandler);
+        void Screenshot(std::function<void(void*, const BufferFormat&)> pixelDataHandler);
 
 
     private:
