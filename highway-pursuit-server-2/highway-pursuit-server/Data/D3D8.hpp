@@ -86,7 +86,7 @@ namespace Data
     struct D3DLOCKED_RECT
     {
         int32_t Pitch;
-        std::uintptr_t pBits;
+        void* pBits;
     };
 
     struct D3DDISPLAYMODE

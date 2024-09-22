@@ -93,8 +93,8 @@ namespace Injected
         typedef D3DERR(__stdcall* CopyRects_t)(IDirect3DDevice8*, IDirect3DSurface8*, CONST RECT*, UINT, IDirect3DSurface8*, CONST POINT*);
 
         // Surface methods
-        typedef D3DERR(__stdcall* LockRect_t)(IDirect3DSurface8*, UINT, D3DLOCKED_RECT*, CONST RECT*, DWORD);
         typedef D3DERR(__stdcall* GetDesc_t)(IDirect3DSurface8*, D3DSURFACE_DESC*);
+        typedef D3DERR(__stdcall* LockRect_t)(IDirect3DSurface8*, D3DLOCKED_RECT*, CONST RECT*, DWORD);
         typedef D3DERR(__stdcall* UnlockRect_t)(IDirect3DSurface8*);
         typedef D3DERR(__stdcall* Release_t)(IDirect3DSurface8*);
 

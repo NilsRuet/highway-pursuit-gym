@@ -71,11 +71,15 @@ namespace Injected
         }
         catch (...)
         {
-            // Release the back buffer surface
             if (pBackBufferSurface)
             {
                 IDirect3DSurface8_Base::Release(pBackBufferSurface);
             }
+            throw;
+        }
+        if (pBackBufferSurface)
+        {
+            IDirect3DSurface8_Base::Release(pBackBufferSurface);
         }
         return res;
     }
@@ -94,7 +98,28 @@ namespace Injected
 
     void RenderingService::Screenshot(void(*pixelDataHandler)(void*, BufferFormat))
     {
-        // TODO
+        // Back buffer method
+        IDirect3DSurface8* pBackBufferSurface;
+        HandleDRDERR(IDirect3DDevice8_Base::GetBackBuffer(Device(), 0, D3DBACKBUFFER_TYPE::MONO, &pBackBufferSurface));
+        BufferFormat format = GetBufferFormatFromSurface(pBackBufferSurface);
+        RECT renderingRect = { 0,0,static_cast<LONG>(format.width), static_cast<LONG>(format.height) };
+
+        try
+        {
+            // Lock pixels
+            D3DLOCKED_RECT lockedRect;
+            HandleDRDERR(IDirect3DSurface8_Base::LockRect(pBackBufferSurface, &lockedRect, &renderingRect, LOCK_RECT_FLAGS::D3DLOCK_READONLY));
+            pixelDataHandler(lockedRect.pBits, format);
+        }
+        catch(...)
+        {
+            // Release resources
+            HandleDRDERR(IDirect3DSurface8_Base::UnlockRect(pBackBufferSurface));
+            HandleDRDERR(IDirect3DSurface8_Base::Release(pBackBufferSurface));
+            throw;
+        }
+        HandleDRDERR(IDirect3DSurface8_Base::UnlockRect(pBackBufferSurface));
+        HandleDRDERR(IDirect3DSurface8_Base::Release(pBackBufferSurface));
     }
 
 
