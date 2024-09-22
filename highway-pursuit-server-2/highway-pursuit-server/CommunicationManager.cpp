@@ -1,12 +1,9 @@
 #include "pch.h"
 #include "CommunicationManager.hpp"
 
-using namespace Data;
-
-// Constructor
 CommunicationManager::CommunicationManager(const ServerParams& args) : _args(args), _cleanLastErrorOnNextRequest(false), _serverInfo(ServerInfo(0, 0, 0, 0))
 {
-    
+    // TODO
 }
 
 // Connect method
@@ -29,7 +26,7 @@ std::vector<Input> CommunicationManager::ReadActions()
 }
 
 // WriteObservationBuffer method
-void CommunicationManager::WriteObservationBuffer(void* buffer, const Injected::RenderingService::BufferFormat& format)
+void CommunicationManager::WriteObservationBuffer(void* buffer, const BufferFormat& format)
 {
     // TODO: Implement the body
 }

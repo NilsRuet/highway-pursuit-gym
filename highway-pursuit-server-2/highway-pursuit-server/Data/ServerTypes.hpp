@@ -17,23 +17,6 @@ namespace Data
         ENVIRONMENT_NOT_RESET = 6,
     };
 
-    class D3D8Exception : public std::runtime_error
-    {
-    public:
-        const D3DERR code;
-
-        D3D8Exception(D3DERR code)
-            : std::runtime_error(FormatErrorMessage(code)), code(code) {}
-
-    private:
-        static std::string FormatErrorMessage(D3DERR code)
-        {
-            std::ostringstream oss;
-            oss << "D3D8 error: 0x" << std::setfill('0') << std::hex << static_cast<int>(code);
-            return oss.str();
-        }
-    };
-
     class MinHookException : public std::runtime_error
     {
     public:
@@ -74,6 +57,45 @@ namespace Data
         static const uint8_t CHEATED_CONSTANT_LIVES = 3;
     };
 
+    struct BufferFormat
+    {
+        uint32_t width;
+        uint32_t height;
+        uint32_t channels;
+
+        BufferFormat() :
+            width(0),
+            height(0),
+            channels(0)
+        {
+
+        }
+
+        BufferFormat(const D3DSURFACE_DESC* surface) :
+            width(surface->Width),
+            height(surface->Height),
+            channels(FormatToChannels(surface->Format))
+        {
+        }
+
+        // Returns size in bytes
+        uint32_t Size() const
+        {
+            return width * height * channels;
+        }
+
+        static uint32_t FormatToChannels(D3DFORMAT format)
+        {
+            switch (format)
+            {
+            case D3DFORMAT::D3DFMT_X8R8G8B8:
+                return 4;
+            default:
+                throw new HighwayPursuitException(ErrorCode::UNSUPPORTED_BACKBUFFER_FORMAT);
+            }
+        }
+    };
+
     enum class Input : uint32_t
     {
         Accelerate,
@@ -105,6 +127,85 @@ namespace Data
             }
         }
     };
+
+
+#pragma pack(push, 1)
+    struct ReturnCode
+    {
+        uint8_t code;
+
+        ReturnCode(uint32_t code)
+        {
+            this->code = static_cast<uint8_t>(code);
+        }
+    };
+
+    struct ServerInfo
+    {
+        uint32_t obsHeight;
+        uint32_t obsWidth;
+        uint32_t obsChannels;
+        uint32_t actionCount;
+
+        ServerInfo(uint32_t obsHeight, uint32_t obsWidth, uint32_t obsChannels, uint32_t actionCount)
+            : obsHeight(obsHeight), obsWidth(obsWidth), obsChannels(obsChannels), actionCount(actionCount)
+        {
+        }
+    };
+
+    enum class InstructionCode : uint32_t
+    {
+        RESET_NEW_LIFE = 1,
+        RESET_NEW_GAME = 2,
+        STEP = 3,
+        CLOSE = 0xFF
+    };
+
+    struct Instruction
+    {
+        InstructionCode code;
+
+        Instruction(InstructionCode code) : code(code) {}
+    };
+
+    struct Info
+    {
+        float tps;
+        float memory;
+
+        Info(float tps, float memory) : tps(tps), memory(memory) {}
+    };
+
+    struct Reward
+    {
+        float reward;
+
+        Reward(float reward) : reward(reward) {}
+    };
+
+    struct Termination
+    {
+        uint8_t terminated;
+        uint8_t truncated;
+
+        Termination(bool terminated, bool truncated)
+        {
+            this->terminated = BoolToByte(terminated);
+            this->truncated = BoolToByte(truncated);
+        }
+
+        bool IsDone() const
+        {
+            return terminated > 0 || truncated > 0;
+        }
+
+    private:
+        static uint8_t BoolToByte(bool value)
+        {
+            return value ? static_cast<uint8_t>(0x1) : static_cast<uint8_t>(0x0);
+        }
+    };
+#pragma pack(pop)
 
 
     struct ServerParams

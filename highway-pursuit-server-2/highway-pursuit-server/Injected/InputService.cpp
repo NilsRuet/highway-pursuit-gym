@@ -1,8 +1,5 @@
 #include "../pch.h"
 #include "InputService.hpp"
-#include "../HookManager.hpp"
-
-using namespace Data;
 
 namespace Injected
 {
@@ -16,6 +13,7 @@ namespace Injected
     // GetInputCount method
     int InputService::GetInputCount()
     {
+        return 0;
     }
 
     // SetInput method
@@ -26,6 +24,7 @@ namespace Injected
     // InputToKeyCode method
     int InputService::InputToKeyCode(Input input)
     {
+        return 0;
     }
 
     // RegisterHooks method

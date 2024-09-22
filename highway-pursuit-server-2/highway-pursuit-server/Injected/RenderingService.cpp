@@ -58,7 +58,7 @@ namespace Injected
         }
     }
 
-    RenderingService::BufferFormat RenderingService::GetBufferFormat()
+    BufferFormat RenderingService::GetBufferFormat()
     {
         BufferFormat res;
         // Get the back buffer surface
@@ -123,7 +123,7 @@ namespace Injected
     }
 
 
-    RenderingService::BufferFormat RenderingService::GetBufferFormatFromSurface(IDirect3DSurface8* pSurface)
+    BufferFormat RenderingService::GetBufferFormatFromSurface(IDirect3DSurface8* pSurface)
     {
         D3DSURFACE_DESC* pDesc = nullptr;
         HandleDRDERR(IDirect3DSurface8_Base::GetDesc(pSurface, pDesc));

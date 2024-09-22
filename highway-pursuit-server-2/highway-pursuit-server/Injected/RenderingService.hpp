@@ -10,45 +10,6 @@ namespace Injected
 	class RenderingService
 	{
     public:
-        struct BufferFormat
-        {
-            uint32_t width;
-            uint32_t height;
-            uint32_t channels;
-
-            BufferFormat() :
-                width(0),
-                height(0),
-                channels(0)
-            {
-
-            }
-
-            BufferFormat(const D3DSURFACE_DESC* surface) :
-                width(surface->Width),
-                height(surface->Height),
-                channels(FormatToChannels(surface->Format))
-            {
-            }
-
-            // Returns size in bytes
-            uint32_t Size() const
-            {
-                return width * height * channels;
-            }
-
-            static uint32_t FormatToChannels(D3DFORMAT format)
-            {
-                switch (format)
-                {
-                case D3DFORMAT::D3DFMT_X8R8G8B8:
-                    return 4;
-                default:
-                    throw new HighwayPursuitException(ErrorCode::UNSUPPORTED_BACKBUFFER_FORMAT);
-                }
-            }
-        };
-
         // Static instance ptr
         static RenderingService* Instance;
         static constexpr float FULL_ZOOM = 10.0f;

@@ -1,4 +1,7 @@
 #pragma once
+#include "../HookManager.hpp"
+
+using namespace Data;
 
 namespace Injected
 {
@@ -19,8 +22,6 @@ namespace Injected
         int InputToKeyCode(Input input);
 
         static constexpr uint8_t ACTIVE_KEY = 0x80;
-#ifdef DEBUG
         static constexpr uint8_t MANUAL_CONTROL_KEY = 0x2A;
-#endif
     };
 }

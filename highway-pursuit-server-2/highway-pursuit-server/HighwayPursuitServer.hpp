@@ -1,6 +1,5 @@
 #pragma once
 #include "Data/ServerTypes.hpp"
-#include "Data/Remote.hpp"
 #include "CommunicationManager.hpp"
 #include "HookManager.hpp"
 #include "Injected/CheatService.hpp"

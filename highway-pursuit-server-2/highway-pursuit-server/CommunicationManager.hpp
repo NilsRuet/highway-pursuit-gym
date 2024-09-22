@@ -1,7 +1,7 @@
 #pragma once
 #include "Data/ServerTypes.hpp"
-#include "Injected/RenderingService.hpp"
-#include "Data/Remote.hpp"
+
+using namespace Data;
 
 class CommunicationManager
 {
@@ -13,7 +13,7 @@ public:
     void Connect(const ServerInfo& serverInfo);
     void ExecuteOnInstruction(std::function<void(InstructionCode)> handler);
     std::vector<Input> ReadActions();
-    void WriteObservationBuffer(void* buffer, const Injected::RenderingService::BufferFormat& format);
+    void WriteObservationBuffer(void* buffer, const BufferFormat& format);
     void WriteInfoBuffer(const Info& info);
     void WriteRewardBuffer(const Reward& reward);
     void WriteTerminationBuffer(const Termination& termination);

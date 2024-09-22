@@ -55,7 +55,7 @@ void HighwayPursuitServer::Run()
         SkipIntro();
 
         // Get server info now that the D3D device is initialized
-        Injected::RenderingService::BufferFormat buffer = _renderingService->GetBufferFormat();
+        BufferFormat buffer = _renderingService->GetBufferFormat();
         ServerInfo serverInfo(
             buffer.height,
             buffer.width,
@@ -73,7 +73,7 @@ void HighwayPursuitServer::Run()
         while (!_serverTerminated)
         {
             auto handler = [this](InstructionCode code) { HandleInstruction(code); };
-            _communicationManager->ExecuteOnInstruction(handler);
+            //_communicationManager->ExecuteOnInstruction(handler);
         }
     }
     // Exception handling for the server thread
@@ -181,7 +181,7 @@ void HighwayPursuitServer::Reset(bool startNewGame)
 
     // Return state/info
     _renderingService->Screenshot(
-        [this](void* pixelData, Injected::RenderingService::BufferFormat format)
+        [this](void* pixelData, BufferFormat format)
         {
             _communicationManager->WriteObservationBuffer(pixelData, format);
         });
@@ -216,7 +216,7 @@ void HighwayPursuitServer::ExecuteForOneFrame(std::function<void()> action)
     }
 }
 
-void HighwayPursuitServer::Step(std::function<void(std::function<void()>)> frameWrapper = nullptr)
+void HighwayPursuitServer::Step(std::function<void(std::function<void()>)> frameWrapper)
 {
     // Get action
     std::vector<Input> actions = _communicationManager->ReadActions();
@@ -262,11 +262,11 @@ void HighwayPursuitServer::Step(std::function<void(std::function<void()>)> frame
 
     // Write return values
     _renderingService->Screenshot(
-        [this](void* pixelData, Injected::RenderingService::BufferFormat format)
+        [this](void* pixelData, BufferFormat format)
         {
             _communicationManager->WriteObservationBuffer(pixelData, format);
         });
-    _communicationManager->WriteRewardBuffer(Reward(cumulatedReward));
+    _communicationManager->WriteRewardBuffer(Reward(static_cast<float>(cumulatedReward)));
     _communicationManager->WriteInfoBuffer(_currentInfo);
     _communicationManager->WriteTerminationBuffer(_lastStepTermination);
 }

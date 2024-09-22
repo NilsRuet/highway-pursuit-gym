@@ -156,7 +156,6 @@
     <ClInclude Include="Injected\CheatService.hpp" />
     <ClInclude Include="Data\D3D8.hpp" />
     <ClInclude Include="Data\ServerTypes.hpp" />
-    <ClInclude Include="Data\Remote.hpp" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="HighwayPursuitServer.hpp" />
     <ClInclude Include="Injected\MemoryAddresses.hpp" />

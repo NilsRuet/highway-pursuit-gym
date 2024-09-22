@@ -10,6 +10,25 @@ namespace Data
     constexpr uint32_t D3DERR_OK = 0;
     // Kind of an arbitrary choice to return a failing code if some D3D hook fails
     constexpr uint32_t D3DERR_NOTAVAILABLE = 2154;
+
+
+    class D3D8Exception : public std::runtime_error
+    {
+    public:
+        const D3DERR code;
+
+        D3D8Exception(D3DERR code)
+            : std::runtime_error(FormatErrorMessage(code)), code(code) {}
+
+    private:
+        static std::string FormatErrorMessage(D3DERR code)
+        {
+            std::ostringstream oss;
+            oss << "D3D8 error: 0x" << std::setfill('0') << std::hex << static_cast<int>(code);
+            return oss.str();
+        }
+    };
+
     #pragma pack(push, 1)
     enum D3DBACKBUFFER_TYPE
     {

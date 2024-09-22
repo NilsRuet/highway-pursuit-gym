@@ -33,9 +33,6 @@
     <ClInclude Include="Data\D3D8.hpp">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
-    <ClInclude Include="Data\Remote.hpp">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
     <ClInclude Include="Data\ServerTypes.hpp">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
