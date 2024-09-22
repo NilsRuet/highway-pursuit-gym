@@ -10,6 +10,8 @@ namespace Injected
         _hookManager(hookManager),
         _renderParams(renderParams)
     {
+        HPLogger::LogDebug("Rendering service created with "+std::to_string(renderParams.renderWidth)+"x"+std::to_string(renderParams.renderHeight)+" "+std::to_string(renderParams.renderingEnabled));
+
         RegisterHooks();
     }
 
@@ -125,14 +127,14 @@ namespace Injected
 
     BufferFormat RenderingService::GetBufferFormatFromSurface(IDirect3DSurface8* pSurface)
     {
-        D3DSURFACE_DESC* pDesc = nullptr;
-        HandleDRDERR(IDirect3DSurface8_Base::GetDesc(pSurface, pDesc));
-        return BufferFormat(pDesc);
+        D3DSURFACE_DESC desc;
+        HandleDRDERR(IDirect3DSurface8_Base::GetDesc(pSurface, &desc));
+        return BufferFormat(desc);
     }
 
     IDirect3DDevice8* RenderingService::Device()
     {
-        IDirect3DDevice8** ppDevice = reinterpret_cast<IDirect3DDevice8**>(_hookManager->GetD3D8Base() + MemoryAddresses::DEVICE_PTR_OFFSET);
+        IDirect3DDevice8** ppDevice = reinterpret_cast<IDirect3DDevice8**>(_hookManager->GetModuleBase() + MemoryAddresses::DEVICE_PTR_OFFSET);
         return *ppDevice;
     }
 
@@ -153,7 +155,8 @@ namespace Injected
     D3DERR RenderingService::CreateDevice_Hook(IDirect3D8* pD3D8, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
     {
         UpdatePresentationParams(pPresentationParameters);
-        return IDirect3D8_Base::CreateDevice(pD3D8, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+        auto res = IDirect3D8_Base::CreateDevice(pD3D8, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, ppReturnedDeviceInterface);
+        return res;
     }
 
     D3DERR RenderingService::Reset_Hook(IDirect3DDevice8* pDevice, D3DPRESENT_PARAMETERS* pPresentationParameters)

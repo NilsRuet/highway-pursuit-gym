@@ -28,5 +28,6 @@ namespace HighwayPursuitLauncher
     // Function declarations
     static int launch(int argc, char* argv[]);
     static bool processArgs(int argc, char* argv[], std::string& targetExe, std::string& targetDll);
+    static bool parseBool(std::string str);
     static bool tryParseResolution(const std::string& arg, unsigned int& width, unsigned int& height);
 }

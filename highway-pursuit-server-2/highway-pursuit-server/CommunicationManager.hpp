@@ -1,5 +1,7 @@
 #pragma once
 #include "Data/ServerTypes.hpp"
+#include <locale>
+#include <codecvt>
 
 using namespace Data;
 

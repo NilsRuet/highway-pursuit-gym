@@ -26,8 +26,10 @@ namespace Injection
         }
 
         // Inject the DLL thread
-        bool RemoteThread(HANDLE process, LPCSTR moduleName, LPCSTR procName, LPVOID pBuffer, LPCVOID arg, SIZE_T argSize)
+        bool RemoteThread(HANDLE process, LPCSTR moduleName, LPCSTR procName, LPVOID pBuffer, LPCVOID arg, SIZE_T argSize, bool async = false)
         {
+            bool res = false;
+
             // Write the DLL path into the allocated memory
             if (!WriteProcessMemory(process, pBuffer, arg, argSize, NULL))
             {
@@ -57,11 +59,28 @@ namespace Injection
                 return false;
             }
 
-            // Wait for the loading to finish and close the handles
-            WaitForSingleObject(hThread, INFINITE);
+            if (!async)
+            {
+                // Wait for the thread to finish
+                DWORD error = WaitForSingleObject(hThread, INFINITE);
+                if (!error)
+                {
+                    res = true;
+                }
+                else
+                {
+                    std::cerr << "Failed to wait remote thread. Error: " << error << std::endl;
+                }
+            }
+            else
+            {
+                // Success!
+                res = true;
+            }
+            // Close the handle
             CloseHandle(hThread);
 
-            return true;
+            return res;
         }
 
         // Injects the DLL and manages the dll arg memory
@@ -82,7 +101,7 @@ namespace Injection
 
         // Injects the DLL and manages the args memory
         // The given DLL has to be already loaded
-        bool CallProcedure(HANDLE process, const std::string& dllPath, const std::string& procName, const HighwayPursuitArgs& args)
+        bool CallProcedure(HANDLE process, const std::string& dllPath, const std::string& procName, const HighwayPursuitArgs& args, bool async = false)
         {
             // Allocate memory in the target process for the DLL path/args
             LPVOID pArgument = VirtualAllocEx(process, NULL, sizeof(HighwayPursuitArgs), MEM_COMMIT, PAGE_READWRITE);
@@ -92,7 +111,7 @@ namespace Injection
                 return false;
             }
 
-            bool res = RemoteThread(process, dllPath.c_str(), procName.c_str(), pArgument, &args, sizeof(HighwayPursuitArgs));
+            bool res = RemoteThread(process, dllPath.c_str(), procName.c_str(), pArgument, &args, sizeof(HighwayPursuitArgs), async);
             VirtualFreeEx(process, pArgument, 0, MEM_RELEASE);
             return res;
         }
@@ -146,8 +165,8 @@ namespace Injection
         // Wake up process
         ResumeThread(pi.hThread);
 
-        // Call server main
-        if (!CallProcedure(pi.hProcess, targetDllPath, "Run", args))
+        // Call server main asynchronously
+        if (!CallProcedure(pi.hProcess, targetDllPath, "Run", args, true))
         {
             FreeLibrary(hModule);
             TerminateProcess(pi.hProcess, 1);
@@ -158,7 +177,6 @@ namespace Injection
 
         // Clean up
         FreeLibrary(hModule);
-        TerminateProcess(pi.hProcess, 0);
         CloseHandle(pi.hThread);
         CloseHandle(pi.hProcess);
         return true;

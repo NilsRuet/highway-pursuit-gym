@@ -59,6 +59,14 @@ void HPLogger::LogException(const std::exception& exception)
     Log("Exception: " + std::string(exception.what()), "[ERROR]");
 }
 
+std::string HPLogger :: ToHex(int value)
+{
+    std::stringstream stream;
+    stream << "0x"
+        << std::hex << std::uppercase << value;
+    return stream.str();
+}
+
 void HPLogger::Log(const std::string& message, const std::string& level)
 {
     if (!_init) return;

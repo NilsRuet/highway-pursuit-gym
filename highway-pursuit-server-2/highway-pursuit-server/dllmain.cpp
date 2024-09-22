@@ -20,7 +20,7 @@ extern "C" __declspec(dllexport) void Initialize(LPVOID lpParam)
         Data::ServerParams options(args.isRealTime, args.frameSkip, renderParams, args.sharedResourcesPrefix);
         serverPtr = std::make_unique<HighwayPursuitServer>(options);
     }
-    catch (const std::runtime_error& e)
+    catch (const std::exception& e)
     {
         HPLogger::LogError(e.what());
     }
@@ -31,7 +31,14 @@ extern "C" __declspec(dllexport) void Run(LPVOID lpParam)
 {
     try
     {
-        serverPtr->Run();
+        try
+        {
+            serverPtr->Run();
+        }
+        catch (const std::runtime_error& e)
+        {
+            HPLogger::LogError(e.what());
+        }
     }
     catch (const std::runtime_error& e)
     {

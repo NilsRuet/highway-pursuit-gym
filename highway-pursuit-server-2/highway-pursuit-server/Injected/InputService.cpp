@@ -13,7 +13,7 @@ namespace Injected
     // GetInputCount method
     int InputService::GetInputCount()
     {
-        return 0;
+        return 8;
     }
 
     // SetInput method

@@ -71,10 +71,10 @@ namespace Data
 
         }
 
-        BufferFormat(const D3DSURFACE_DESC* surface) :
-            width(surface->Width),
-            height(surface->Height),
-            channels(FormatToChannels(surface->Format))
+        BufferFormat(const D3DSURFACE_DESC& surface) :
+            width(surface.Width),
+            height(surface.Height),
+            channels(FormatToChannels(surface.Format))
         {
         }
 

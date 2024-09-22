@@ -27,8 +27,7 @@ namespace HighwayPursuitLauncher
         try
         {
             // Real-time
-            bool isRealTime;
-            std::istringstream(std::string(argv[ARG_REAL_TIME])) >> std::boolalpha >> isRealTime;
+            bool isRealTime = parseBool(argv[ARG_REAL_TIME]);
 
             // Frameskip
             int frameSkip = std::stoi(argv[ARG_FRAME_SKIP]);
@@ -45,9 +44,8 @@ namespace HighwayPursuitLauncher
             }
 
             // Rendering enabled
-            bool renderEnabled;
-            std::istringstream(std::string(argv[ARG_ENABLE_RENDERING])) >> std::boolalpha >> renderEnabled;
-
+            bool renderEnabled = parseBool(argv[ARG_ENABLE_RENDERING]);
+            
 
             // Inject the DLL into the target process
             auto args = Shared::HighwayPursuitArgs(isRealTime, frameSkip, renderWidth, renderHeight, renderEnabled, argv[ARG_LOG_DIR_PATH], argv[ARG_SHARED_RESOURCES_PREFIX]);
@@ -64,6 +62,14 @@ namespace HighwayPursuitLauncher
         }
 
         return ExitCode::Success;
+    }
+
+    static bool parseBool(std::string str)
+    {
+        bool res;
+        std::transform(str.begin(), str.end(), str.begin(), [](unsigned char c) { return std::tolower(c); });
+        std::istringstream(str) >> std::boolalpha >> res;
+        return res;
     }
 
     // Parse resolution in format WxH (e.g., 1920x1080)

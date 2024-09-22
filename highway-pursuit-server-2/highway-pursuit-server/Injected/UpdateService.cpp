@@ -91,7 +91,7 @@ namespace Injected
     {
         if (_useSemaphores)
         {
-            WaitForSingleObject(_lockUpdatePool, INFINITE);
+            WaitForSingleObject(_lockUpdatePool, SERVER_TIMEOUT);
         }
         this->UpdateTime();
         Update_Base();

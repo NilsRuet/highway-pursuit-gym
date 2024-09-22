@@ -17,6 +17,7 @@ namespace Injected
         void DisableSemaphores();
 
     private:
+        static constexpr int SERVER_TIMEOUT = 30000; // To avoid waiting infinitely
         // Members
         std::shared_ptr<HookManager> _hookManager;
         float _FPS;

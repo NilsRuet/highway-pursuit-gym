@@ -41,6 +41,8 @@ HighwayPursuitServer::HighwayPursuitServer(const Data::ServerParams& options)
 
 HighwayPursuitServer::~HighwayPursuitServer()
 {
+    _updateService->DisableSemaphores();
+    ReleaseSemaphore(_lockUpdatePool, 1, nullptr);
     CloseHandle(_lockUpdatePool);
     CloseHandle(_lockServerPool);
 }
@@ -93,8 +95,8 @@ void HighwayPursuitServer::WaitGameUpdate()
 {
     _updateService->UpdateTime();
     ReleaseSemaphore(_lockUpdatePool, 1, nullptr);
-    DWORD acquired = WaitForSingleObject(_lockServerPool, GAME_TIMEOUT);
-    if (!acquired)
+    DWORD error = WaitForSingleObject(_lockServerPool, GAME_TIMEOUT);
+    if (error)
     {
         throw HighwayPursuitException(ErrorCode::GAME_TIMEOUT);
     }

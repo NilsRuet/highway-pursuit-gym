@@ -50,14 +50,14 @@ void CommunicationManager::Connect(const ServerInfo& serverInfo)
     _serverInfo = serverInfo;
 
     // Open synchronization semaphores mutex
-    _lockServerPool = OpenSemaphoreA(SYNCHRONIZE, false, _args.serverMutexName.c_str());
+    _lockServerPool = OpenSemaphoreA(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, false, _args.serverMutexName.c_str());
     if (_lockServerPool == nullptr)
     {
         throw std::runtime_error("Couldn't get semaphore, error " + std::to_string(GetLastError()));
     }
 
-    _lockServerPool = OpenSemaphoreA(SYNCHRONIZE, false, _args.clientMutexName.c_str());
-    if (_lockServerPool == nullptr)
+    _lockClientPool = OpenSemaphoreA(SYNCHRONIZE | SEMAPHORE_MODIFY_STATE, true, _args.clientMutexName.c_str());
+    if (_lockClientPool == nullptr)
     {
         throw std::runtime_error("Couldn't get semaphore, error " + std::to_string(GetLastError()));
     }
@@ -154,8 +154,8 @@ void CommunicationManager::WriteException(const HighwayPursuitException& excepti
 
 void CommunicationManager::SyncOnClientQuery(std::function<void()> onQuery)
 {
-    DWORD acquired = WaitForSingleObject(_lockServerPool, CLIENT_TIMEOUT);
-    if (acquired)
+    DWORD error = WaitForSingleObject(_lockServerPool, CLIENT_TIMEOUT);
+    if (!error)
     {
         try
         {
@@ -164,7 +164,6 @@ void CommunicationManager::SyncOnClientQuery(std::function<void()> onQuery)
                 WriteACK();
                 _cleanLastErrorOnNextRequest = false;
             }
-
             onQuery();
         }
         // We need to write the exception before releasing so the client doesn't use invaldi data
@@ -184,7 +183,11 @@ void CommunicationManager::SyncOnClientQuery(std::function<void()> onQuery)
         }
 
         // Answer to the client
-        ReleaseSemaphore(_lockClientPool, 1, nullptr);
+        bool res = ReleaseSemaphore(_lockClientPool, 1, nullptr);
+        if (!res)
+        {
+            throw std::runtime_error("Failed to release semaphore. Error "+std::to_string(GetLastError()));
+        }
     }
     else
     {
@@ -194,7 +197,6 @@ void CommunicationManager::SyncOnClientQuery(std::function<void()> onQuery)
 
 LPVOID CommunicationManager::ConnectToSharedMemory(const std::string& name, DWORD size)
 {
-
     HANDLE hMapFile = OpenFileMappingA(
         FILE_MAP_ALL_ACCESS, // Request read/write access
         FALSE,               // Do not inherit the handle

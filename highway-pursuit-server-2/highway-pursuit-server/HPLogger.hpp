@@ -23,6 +23,7 @@ public:
     static void LogWarning(const std::string& message);
     static void LogError(const std::string& message);
     static void LogException(const std::exception& exception);
+    static std::string ToHex(int value);
 
 private:
     static bool _init;
