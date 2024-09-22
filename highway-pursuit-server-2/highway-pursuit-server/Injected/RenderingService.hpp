@@ -9,6 +9,7 @@ namespace Injected
 
 	class RenderingService
 	{
+    public:
         struct BufferFormat
         {
             uint32_t width;
@@ -48,7 +49,6 @@ namespace Injected
             }
         };
 
-    public:
         // Static instance ptr
         static RenderingService* Instance;
         static constexpr float FULL_ZOOM = 10.0f;
@@ -60,7 +60,7 @@ namespace Injected
         BufferFormat GetBufferFormat();
         void SetFullscreenFlag(bool useFullscreen);
         void ResetZoomLevel();
-        void Screenshot(void(*pixelDataHandler)(void*, BufferFormat));
+        void Screenshot(std::function<void(void*, BufferFormat)> pixelDataHandler);
 
 
     private:

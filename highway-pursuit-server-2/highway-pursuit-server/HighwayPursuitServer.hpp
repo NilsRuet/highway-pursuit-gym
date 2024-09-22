@@ -23,10 +23,11 @@ class HighwayPursuitServer
 
         HighwayPursuitServer(const Data::ServerParams& options);
         ~HighwayPursuitServer();
+        void Run();
 
     private:
-        const float TICKS_PER_FRAME;
-        const float TICKS_PER_MS;
+        float TICKS_PER_FRAME;
+        float TICKS_PER_MS;
         const Data::ServerParams _options; // Game options
         std::unique_ptr<CommunicationManager> _communicationManager;
         std::shared_ptr<HookManager> _hookManager;
@@ -39,11 +40,20 @@ class HighwayPursuitServer
 
         HANDLE _lockUpdatePool; // Update thread waits for this
         HANDLE _lockServerPool; // Server thread waits for this
-        std::atomic<bool> _firstEpisodeInitialized; // Using atomic for thread safety
-        std::atomic<bool> _serverTerminated;        // Using atomic for thread safety
-        long _totalEllapsedFrames;
+        std::atomic<bool> _firstEpisodeInitialized;
+        std::atomic<bool> _serverTerminated;
+        uint64_t _totalEllapsedFrames;
         Data::Termination _lastStepTermination;
         Data::Info _currentInfo;
-        long _startTick;
+        ULONGLONG _startTick;
+
+        void WaitGameUpdate();
+        void SkipIntro();
+        void HandleInstruction(InstructionCode code);
+        void Reset(bool startNewGame);
+        void ExecuteForOneFrame(std::function<void()> action);
+        void Step(std::function<void(std::function<void()>)> frameWrapper = nullptr);
+        void HandleMetrics();
+        float ComputeMemoryUsage();
 };
 

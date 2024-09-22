@@ -1,6 +1,7 @@
 #ifndef PCH_H
 #define PCH_H
 
+#include "framework.h"
 #include <iostream>
 #include <string>
 #include <cstdint>
@@ -15,8 +16,10 @@
 #include <cmath>
 #include <mutex>
 #include <vector>
+#include <functional>
+#include <processthreadsapi.h>
+#include <psapi.h>
 
-#include "framework.h"
 #include "HPLogger.hpp"
 
 #endif //PCH_H
