@@ -54,7 +54,7 @@ namespace Data
     class HighwayPursuitConstants
     {
     public:
-        static const uint8_t CHEATED_CONSTANT_LIVES = 3;
+        static const uint32_t CHEATED_CONSTANT_LIVES = 3;
     };
 
     struct BufferFormat

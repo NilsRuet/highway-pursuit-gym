@@ -6,9 +6,6 @@ namespace Injected
     class UpdateService
     {
     public:
-        // Static instance ptr
-        static UpdateService* Instance;
-        
         // Constructor
         UpdateService(std::shared_ptr<HookManager> hookManager, bool isRealTime, HANDLE lockServerPool, HANDLE lockUpdatePool, float FPS, LARGE_INTEGER performanceCounterFrequency);
         
@@ -18,6 +15,8 @@ namespace Injected
 
     private:
         static constexpr int SERVER_TIMEOUT = 30000; // To avoid waiting infinitely
+        static UpdateService* Instance;
+
         // Members
         std::shared_ptr<HookManager> _hookManager;
         float _FPS;

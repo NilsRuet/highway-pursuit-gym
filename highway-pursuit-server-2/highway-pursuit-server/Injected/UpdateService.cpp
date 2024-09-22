@@ -4,8 +4,6 @@
 
 namespace Injected
 {
-    UpdateService* UpdateService::Instance = nullptr;
-
     UpdateService::UpdateService(std::shared_ptr<HookManager> hookManager, bool isRealTime, HANDLE lockServerPool, HANDLE lockUpdatePool, float FPS, LARGE_INTEGER performanceCounterFrequency) :
         _hookManager(hookManager),
         _isRealTime(isRealTime),
@@ -128,6 +126,7 @@ namespace Injected
         }
     }
 
+    UpdateService* UpdateService::Instance = nullptr;
     UpdateService::QueryPerformanceFrequency_t UpdateService::QueryPerformanceFrequency_Base = nullptr;
     UpdateService::QueryPerformanceCounter_t UpdateService::QueryPerformanceCounter_Base = nullptr;
     UpdateService::Update_t UpdateService::Update_Base = nullptr;
