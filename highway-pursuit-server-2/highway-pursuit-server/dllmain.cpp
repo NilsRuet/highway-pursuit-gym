@@ -31,14 +31,7 @@ extern "C" __declspec(dllexport) void Run(LPVOID lpParam)
 {
     try
     {
-        try
-        {
-            serverPtr->Run();
-        }
-        catch (const std::runtime_error& e)
-        {
-            HPLogger::LogError(e.what());
-        }
+        serverPtr->Run();
     }
     catch (const std::runtime_error& e)
     {
