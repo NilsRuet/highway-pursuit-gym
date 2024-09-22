@@ -15,7 +15,6 @@ namespace Injected
 
     private:
         static constexpr int SERVER_TIMEOUT = 30000; // To avoid waiting infinitely
-        static UpdateService* Instance;
 
         // Members
         std::shared_ptr<HookManager> _hookManager;
@@ -28,10 +27,10 @@ namespace Injected
         long _counterTicksPerFrame;
         bool _useSemaphores;
 
-        // private methods
         void RegisterHooks();
 
         // Hooks
+        static UpdateService* Instance;
         BOOL QueryPerformanceFrequency_Hook(LARGE_INTEGER* lpFrequency);
         BOOL QueryPerformanceCounter_Hook(LARGE_INTEGER* lpPerformanceCount);
         void Update_Hook();

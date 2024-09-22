@@ -8,12 +8,11 @@ namespace Injected
         public:
             CheatService(std::shared_ptr<HookManager> hookManager);
         private:
-            static CheatService* Instance;
-
             std::shared_ptr<HookManager> _hookManager;
             void RegisterHooks();
 
             // Hooks
+            static CheatService* Instance;
             uint32_t GetLives_Hook();
 
             // Function signatures
