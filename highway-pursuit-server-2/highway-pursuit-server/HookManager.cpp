@@ -1,7 +1,5 @@
 #include "pch.h"
 #include "HookManager.hpp"
-#include "Data/ServerTypes.hpp"
-#include "MinHook.h"
 
 HookManager::HookManager()
 {
@@ -18,15 +16,6 @@ HookManager::HookManager()
     if (!_dinputBase)
     {
         throw std::runtime_error("Couldn't find DINPUT8.dll.");
-    }
-}
-
-void HookManager::RegisterHook(const LPVOID& proc, const LPVOID& hook, LPVOID* pGatewayOut)
-{
-    MH_STATUS res = MH_CreateHook(proc, hook, pGatewayOut);
-    if (res != MH_OK)
-    {
-        throw Data::MinHookException(res);
     }
 }
 

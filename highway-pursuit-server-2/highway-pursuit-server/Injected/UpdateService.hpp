@@ -3,15 +3,6 @@
 
 namespace Injected
 {
-    // Function signatures
-    typedef BOOL(WINAPI* QueryPerformanceFrequency_t)(LARGE_INTEGER*);
-    typedef BOOL(WINAPI* QueryPerformanceCounter_t)(LARGE_INTEGER*);
-    typedef void(__cdecl* Update_t)(void);
-    
-    static QueryPerformanceCounter_t QueryPerformanceCounter_Base;
-    static QueryPerformanceFrequency_t QueryPerformanceFrequency_Base;
-    static Update_t Update_Base;
-
     class UpdateService
     {
     public:
@@ -25,14 +16,7 @@ namespace Injected
         void UpdateTime();
         void DisableSemaphores();
 
-        // Hooks
-        bool WINAPI QueryPerformanceFrequency_Hook(LARGE_INTEGER* lpFrequency) const;
-        bool WINAPI QueryPerformanceCounter_Hook(LARGE_INTEGER* lpPerformanceCount);
-        void __cdecl Update_Hook();
     private:
-        // private methods
-        void RegisterHooks();
-
         // Members
         std::shared_ptr<HookManager> _hookManager;
         float _FPS;
@@ -43,5 +27,28 @@ namespace Injected
         LARGE_INTEGER _performanceCounter;
         long _counterTicksPerFrame;
         bool _useSemaphores;
+
+        // private methods
+        void RegisterHooks();
+
+        // Hooks
+        BOOL QueryPerformanceFrequency_Hook(LARGE_INTEGER* lpFrequency);
+        BOOL QueryPerformanceCounter_Hook(LARGE_INTEGER* lpPerformanceCount);
+        void Update_Hook();
+
+        // Function signatures
+        typedef BOOL(WINAPI* QueryPerformanceFrequency_t)(LARGE_INTEGER*);
+        typedef BOOL(WINAPI* QueryPerformanceCounter_t)(LARGE_INTEGER*);
+        typedef void(__cdecl* Update_t)(void);
+
+        // Original functions
+        static QueryPerformanceCounter_t QueryPerformanceCounter_Base;
+        static QueryPerformanceFrequency_t QueryPerformanceFrequency_Base;
+        static Update_t Update_Base;
+
+        // Static hooks (entry points)
+        static BOOL WINAPI QueryPerformanceFrequency_StaticHook(LARGE_INTEGER* lpFrequency);
+        static BOOL WINAPI QueryPerformanceCounter_StaticHook(LARGE_INTEGER* lpPerformanceCount);
+        static void __cdecl Update_StaticHook();
     };
 }
