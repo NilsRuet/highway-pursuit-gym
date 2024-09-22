@@ -41,14 +41,14 @@ namespace Injected
         typedef BOOL(WINAPI* QueryPerformanceCounter_t)(LARGE_INTEGER*);
         typedef void(__cdecl* Update_t)(void);
 
-        // Original functions
-        static QueryPerformanceCounter_t QueryPerformanceCounter_Base;
-        static QueryPerformanceFrequency_t QueryPerformanceFrequency_Base;
-        static Update_t Update_Base;
-
         // Static hooks (entry points)
         static BOOL WINAPI QueryPerformanceFrequency_StaticHook(LARGE_INTEGER* lpFrequency);
         static BOOL WINAPI QueryPerformanceCounter_StaticHook(LARGE_INTEGER* lpPerformanceCount);
         static void __cdecl Update_StaticHook();
+
+        // Original functions
+        static QueryPerformanceCounter_t QueryPerformanceCounter_Base;
+        static QueryPerformanceFrequency_t QueryPerformanceFrequency_Base;
+        static Update_t Update_Base;
     };
 }

@@ -42,7 +42,7 @@ namespace Injection
                 std::cerr << "Failed to get module '" << moduleName << "'. Error: " << GetLastError() << std::endl;
                 return false;
             }
-            LPVOID pProc = (LPVOID)GetProcAddress(pModule, procName);
+            LPVOID pProc = reinterpret_cast<LPVOID>(GetProcAddress(pModule, procName));
             if (!pProc)
             {
                 std::cerr << "Failed to get address of '" << procName << "'. Error: " << GetLastError() << std::endl;

@@ -3,10 +3,17 @@
 
 namespace Data
 {
+    typedef void IDirect3D8;
+    typedef void IDirect3DDevice8;
+    typedef void IDirect3DSurface8;
+    typedef uint32_t D3DERR;
+    constexpr uint32_t D3DERR_OK = 0;
+    // Kind of an arbitrary choice to return a failing code if some D3D hook fails
+    constexpr uint32_t D3DERR_NOTAVAILABLE = 2154;
     #pragma pack(push, 1)
     enum D3DBACKBUFFER_TYPE
     {
-        TYPE_MONO = 0,
+        MONO = 0,
         LEFT = 1,
         RIGHT = 2,
         FORCE_DWORD = 0x7fffffff
@@ -74,17 +81,6 @@ namespace Data
         D3DDEVTYPE_REF = 2,
         D3DDEVTYPE_SW = 3,
         D3DDEVTYPE_FORCE_DWORD = 0xffffffff
-    };
-
-    struct RECT
-    {
-        int left;
-        int top;
-        int right;
-        int bottom;
-
-        // Constructor
-        RECT(int l, int t, int r, int b) : left(l), top(t), right(r), bottom(b) { }
     };
 
     struct D3DLOCKED_RECT

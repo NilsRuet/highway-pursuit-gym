@@ -1,6 +1,7 @@
 #pragma once
 #include "../pch.h"
 #include "MinHook.h"
+#include "D3D8.hpp"
 
 namespace Data
 {
@@ -16,6 +17,23 @@ namespace Data
         ENVIRONMENT_NOT_RESET = 6,
     };
 
+    class D3D8Exception : public std::runtime_error
+    {
+    public:
+        const D3DERR code;
+
+        D3D8Exception(D3DERR code)
+            : std::runtime_error(FormatErrorMessage(code)), code(code) {}
+
+    private:
+        static std::string FormatErrorMessage(D3DERR code)
+        {
+            std::ostringstream oss;
+            oss << "D3D8 error: 0x" << std::setfill('0') << std::hex << static_cast<int>(code);
+            return oss.str();
+        }
+    };
+
     class MinHookException : public std::runtime_error
     {
     public:
@@ -28,7 +46,7 @@ namespace Data
         static std::string FormatErrorMessage(MH_STATUS code)
         {
             std::ostringstream oss;
-            oss << "Highway pursuit MinHook error: 0x" << std::setfill('0') << std::hex << static_cast<int>(code);
+            oss << "MinHook error: 0x" << std::setfill('0') << std::hex << static_cast<int>(code);
             return oss.str();
         }
     };

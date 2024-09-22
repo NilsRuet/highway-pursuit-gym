@@ -8,7 +8,6 @@ HighwayPursuitServer::HighwayPursuitServer(const Data::ServerParams& options)
     _communicationManager(std::make_unique<CommunicationManager>()),
     _episodeService(std::make_unique<EpisodeService>()),
     _inputService(std::make_unique<InputService>()),
-    _renderingService(std::make_unique<RenderingService>()),
     _scoreService(std::make_unique<ScoreService>()),
     _cheatService(std::make_unique<CheatService>()),
     _firstEpisodeInitialized(false),
@@ -28,9 +27,11 @@ HighwayPursuitServer::HighwayPursuitServer(const Data::ServerParams& options)
     LARGE_INTEGER frequency;
     frequency.QuadPart = PERFORMANCE_COUNTER_FREQUENCY;
     _updateService = std::make_unique<UpdateService>(_hookManager, options.isRealTime, _lockServerPool, _lockUpdatePool, FPS, frequency);
+    _renderingService = std::make_unique<RenderingService>(_hookManager, options.renderParams);
 
     // Enable hooks
     _hookManager->EnableHooks();
+    _renderingService->SetFullscreenFlag(false);
 }
 
 HighwayPursuitServer::~HighwayPursuitServer()

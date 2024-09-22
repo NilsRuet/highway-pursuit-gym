@@ -36,7 +36,7 @@ namespace Injected
 
     void UpdateService::RegisterHooks()
     {
-        // Setup the pointer for the static hook to access the context
+        // Setup pointers for static hooks
         UpdateService::Instance = this;
 
         if (!_isRealTime)
@@ -58,8 +58,8 @@ namespace Injected
         }
 
         // Update function
-        LPVOID updatePtr = (LPVOID)(_hookManager->GetModuleBase() + Injected::MemoryAddresses::UPDATE_OFFSET);
-        _hookManager->RegisterHook(updatePtr, &Update_StaticHook, reinterpret_cast<LPVOID*>(&Update_Base));
+        LPVOID updatePtr = reinterpret_cast<LPVOID>(_hookManager->GetModuleBase() + Injected::MemoryAddresses::UPDATE_OFFSET);
+        _hookManager->RegisterHook(updatePtr, &Update_StaticHook, &Update_Base);
     }
 
     BOOL UpdateService::QueryPerformanceFrequency_Hook(LARGE_INTEGER* lpFrequency)
@@ -101,10 +101,6 @@ namespace Injected
          }*/
     }
 
-    UpdateService::QueryPerformanceFrequency_t UpdateService::QueryPerformanceFrequency_Base = nullptr;
-    UpdateService::QueryPerformanceCounter_t UpdateService::QueryPerformanceCounter_Base = nullptr;
-    UpdateService::Update_t UpdateService::Update_Base = nullptr;
-
     BOOL WINAPI UpdateService::QueryPerformanceFrequency_StaticHook(LARGE_INTEGER* lpFrequency)
     {
         if (UpdateService::Instance != nullptr)
@@ -132,4 +128,7 @@ namespace Injected
         }
     }
 
+    UpdateService::QueryPerformanceFrequency_t UpdateService::QueryPerformanceFrequency_Base = nullptr;
+    UpdateService::QueryPerformanceCounter_t UpdateService::QueryPerformanceCounter_Base = nullptr;
+    UpdateService::Update_t UpdateService::Update_Base = nullptr;
 }
