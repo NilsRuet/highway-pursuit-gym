@@ -4,10 +4,10 @@
 
 namespace Injected
 {
-    InputService::InputService(std::shared_ptr<HookManager> hookManager)
+    InputService::InputService(std::shared_ptr<HookManager> hookManager, IDirectInput8* dinput)
         : _hookManager(hookManager)
     {
-        RegisterHooks();
+        RegisterHooks(dinput);
     }
 
     int InputService::GetInputCount()
@@ -55,15 +55,15 @@ namespace Injected
     }
 
     // RegisterHooks method
-    void InputService::RegisterHooks()
+    void InputService::RegisterHooks(IDirectInput8* dinput)
     {
         InputService::Instance = this;
 
-        LPVOID setCooperativeLevelPtr = reinterpret_cast<LPVOID>(_hookManager->GetDINPUTBase() + MemoryAddresses::SET_COOPERATIVE_LEVEL_OFFSET);
+       /* LPVOID setCooperativeLevelPtr = reinterpret_cast<LPVOID>(_hookManager->GetDINPUTBase() + MemoryAddresses::SET_COOPERATIVE_LEVEL_OFFSET);
         _hookManager->RegisterHook(setCooperativeLevelPtr, &SetCooperativeLevel_StaticHook, &SetCooperativeLevel_Base);
 
         LPVOID GetDeviceStatePtr = reinterpret_cast<LPVOID>(_hookManager->GetDINPUTBase() + MemoryAddresses::GET_DEVICE_STATE_OFFSET);
-        _hookManager->RegisterHook(GetDeviceStatePtr, &GetDeviceState_StaticHook, &GetDeviceState_Base);
+        _hookManager->RegisterHook(GetDeviceStatePtr, &GetDeviceState_StaticHook, &GetDeviceState_Base);*/
     }
 
     D3DERR InputService::SetCooperativeLevel_Hook(IDirectInputDevice8* pInput, HWND hwnd, DISCL_FLAGS dwFlags)

@@ -22,6 +22,7 @@ class HighwayPursuitServer
 
         HighwayPursuitServer(const Data::ServerParams& options);
         ~HighwayPursuitServer();
+        void Init();
         void Run();
 
     private:

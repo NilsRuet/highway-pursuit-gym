@@ -15,6 +15,9 @@ HighwayPursuitServer::HighwayPursuitServer(const Data::ServerParams& options)
     TICKS_PER_FRAME = ticks_per_s / FPS;
     TICKS_PER_MS = ticks_per_s / 1000.0f;
 
+    // Hook manager
+    _hookManager = std::make_shared<HookManager>();
+
     // init communication manager
     _communicationManager = std::make_unique<CommunicationManager>(options);
 
@@ -22,21 +25,21 @@ HighwayPursuitServer::HighwayPursuitServer(const Data::ServerParams& options)
     _lockUpdatePool = CreateSemaphore(nullptr, 0, 1, nullptr);
     _lockServerPool = CreateSemaphore(nullptr, 0, 1, nullptr);
 
-    // init services
-    _hookManager = std::make_shared<HookManager>();
-
+    // Install static hooks/services
     LARGE_INTEGER frequency;
     frequency.QuadPart = PERFORMANCE_COUNTER_FREQUENCY;
     _episodeService = std::make_unique<EpisodeService>(_hookManager);
-    _updateService = std::make_unique<UpdateService>(_hookManager, options.isRealTime, _lockServerPool, _lockUpdatePool, FPS, frequency);
-    _inputService = std::make_unique<InputService>(_hookManager);
-    _renderingService = std::make_unique<RenderingService>(_hookManager, options.renderParams);
+    _updateService = std::make_unique<UpdateService>(_hookManager, _options.isRealTime, _lockServerPool, _lockUpdatePool, FPS, frequency);
     _scoreService = std::make_unique<ScoreService>(_hookManager);
     _cheatService = std::make_unique<CheatService>(_hookManager);
 
-    // Enable hooks
-    _hookManager->EnableHooks();
-    _renderingService->SetFullscreenFlag(false);
+    // These need the app to be partly initialized to properly hook
+    _renderingService = nullptr;
+    _inputService = nullptr;
+    _hookManager->HookAndLockD3D8Create();
+    _hookManager->HookAndLockDirectInputCreate();
+    // Enable static hooks
+    _hookManager->EnableAllNewHooks();
 }
 
 HighwayPursuitServer::~HighwayPursuitServer()
@@ -45,6 +48,24 @@ HighwayPursuitServer::~HighwayPursuitServer()
     ReleaseSemaphore(_lockUpdatePool, 1, nullptr);
     CloseHandle(_lockUpdatePool);
     CloseHandle(_lockServerPool);
+}
+
+void HighwayPursuitServer::Init()
+{
+    // Init the service reliant on d3d8
+    auto d3d8 = _hookManager->GetD3D8Interface();
+    _renderingService = std::make_unique<RenderingService>(_hookManager, d3d8, _options.renderParams);
+    _renderingService->SetFullscreenFlag(false);
+    // Enable d3d8 hooks, resume d3d8 initialisation
+    _hookManager->EnableAllNewHooks();
+    _hookManager->UnlockD3D8Initialisation();
+
+    // Init the service reliant on dinput
+    auto dinput = _hookManager->GetDInputInterface();
+    _inputService = std::make_unique<InputService>(_hookManager, dinput);
+    // Enable dinput hooks, resume dinput initialisation
+    _hookManager->EnableAllNewHooks();
+    _hookManager->UnlockDInputInitialisation();
 }
 
 void HighwayPursuitServer::Run()

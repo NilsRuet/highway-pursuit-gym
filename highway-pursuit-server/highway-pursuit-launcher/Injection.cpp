@@ -152,7 +152,7 @@ namespace Injection
             return false;
         }
 
-        // Call init function (install hooks)
+        // Call init function (install first hooks)
         if (!CallProcedure(pi.hProcess, targetDllPath, "Initialize", args))
         {
             FreeLibrary(hModule);

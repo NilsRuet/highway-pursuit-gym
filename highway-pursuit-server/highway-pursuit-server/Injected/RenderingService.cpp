@@ -6,50 +6,54 @@ namespace Injected
 {
     RenderingService* RenderingService::Instance = nullptr;
 
-    RenderingService::RenderingService(std::shared_ptr<HookManager> hookManager, const ServerParams::RenderParams& renderParams) :
+    RenderingService::RenderingService(std::shared_ptr<HookManager> hookManager, IDirect3D8* d3d8, const ServerParams::RenderParams& renderParams) :
         _hookManager(hookManager),
         _renderParams(renderParams)
     {
-        HPLogger::LogDebug("Rendering service created with "+std::to_string(renderParams.renderWidth)+"x"+std::to_string(renderParams.renderHeight)+" "+std::to_string(renderParams.renderingEnabled));
-
-        RegisterHooks();
+        FindAddresses(d3d8);
+        RegisterHooks(d3d8);
     }
 
-    void RenderingService::RegisterHooks()
+    void RenderingService::FindAddresses(IDirect3D8* d3d8)
+    {
+
+    }
+
+    void RenderingService::RegisterHooks(IDirect3D8* d3d8)
     {
         // Setup pointers for static hooks
         RenderingService::Instance = this;
 
-        // Window Procedure
-        LPVOID windowProcPtr = reinterpret_cast<LPVOID>(_hookManager->GetModuleBase() + MemoryAddresses::WINDOW_PROC_OFFSET);
-        _hookManager->RegisterHook(windowProcPtr, &WindowProcedure_StaticHook, &WindowProcedure_Base);
+        //// Window Procedure
+        //LPVOID windowProcPtr = reinterpret_cast<LPVOID>(_hookManager->GetModuleBase() + MemoryAddresses::WINDOW_PROC_OFFSET);
+        //_hookManager->RegisterHook(windowProcPtr, &WindowProcedure_StaticHook, &WindowProcedure_Base);
 
-        // D3D8 functions
-        uintptr_t d3d8 = _hookManager->GetD3D8Base();
+        //// D3D8 functions
+        //uintptr_t d3d8 = _hookManager->GetD3D8Base();
 
-        // Create device
-        LPVOID createDevicePtr = reinterpret_cast<LPVOID>(d3d8 + MemoryAddresses::CREATE_DEVICE_OFFSET);
-        _hookManager->RegisterHook(createDevicePtr, &CreateDevice_StaticHook, &IDirect3D8_Base::CreateDevice);
+        //// Create device
+        //LPVOID createDevicePtr = reinterpret_cast<LPVOID>(d3d8 + MemoryAddresses::CREATE_DEVICE_OFFSET);
+        //_hookManager->RegisterHook(createDevicePtr, &CreateDevice_StaticHook, &IDirect3D8_Base::CreateDevice);
 
-        // Reset device
-        LPVOID resetDevicePtr = reinterpret_cast<LPVOID>(d3d8 + MemoryAddresses::RESET_DEVICE_OFFSET);
-        _hookManager->RegisterHook(resetDevicePtr, &Reset_StaticHook, &IDirect3DDevice8_Base::Reset);
+        //// Reset device
+        //LPVOID resetDevicePtr = reinterpret_cast<LPVOID>(d3d8 + MemoryAddresses::RESET_DEVICE_OFFSET);
+        //_hookManager->RegisterHook(resetDevicePtr, &Reset_StaticHook, &IDirect3DDevice8_Base::Reset);
 
-        // Present device
-        LPVOID presentPtr = reinterpret_cast<LPVOID>(d3d8 + MemoryAddresses::PRESENT_OFFSET);
-        _hookManager->RegisterHook(presentPtr, &Present_StaticHook, &IDirect3DDevice8_Base::Present);
+        //// Present device
+        //LPVOID presentPtr = reinterpret_cast<LPVOID>(d3d8 + MemoryAddresses::PRESENT_OFFSET);
+        //_hookManager->RegisterHook(presentPtr, &Present_StaticHook, &IDirect3DDevice8_Base::Present);
 
-        // Device called functions
-        IDirect3DDevice8_Base::GetDisplayMode = (GetDisplayMode_t)(d3d8 + MemoryAddresses::RESET_DEVICE_OFFSET);
-        IDirect3DDevice8_Base::CreateImageSurface = (CreateImageSurface_t)(d3d8 + MemoryAddresses::CREATE_SURFACE_IMAGE_OFFSET);
-        IDirect3DDevice8_Base::GetBackBuffer = (GetBackBuffer_t)(d3d8 + MemoryAddresses::GET_BACK_BUFFER_OFFSET);
-        IDirect3DDevice8_Base::CopyRects = (CopyRects_t)(d3d8 + MemoryAddresses::COPY_RECTS_OFFSET);
+        //// Device called functions
+        //IDirect3DDevice8_Base::GetDisplayMode = (GetDisplayMode_t)(d3d8 + MemoryAddresses::RESET_DEVICE_OFFSET);
+        //IDirect3DDevice8_Base::CreateImageSurface = (CreateImageSurface_t)(d3d8 + MemoryAddresses::CREATE_SURFACE_IMAGE_OFFSET);
+        //IDirect3DDevice8_Base::GetBackBuffer = (GetBackBuffer_t)(d3d8 + MemoryAddresses::GET_BACK_BUFFER_OFFSET);
+        //IDirect3DDevice8_Base::CopyRects = (CopyRects_t)(d3d8 + MemoryAddresses::COPY_RECTS_OFFSET);
 
-        // Surface functions
-        IDirect3DSurface8_Base::GetDesc = (GetDesc_t)(d3d8 + MemoryAddresses::GET_DESC_OFFSET);
-        IDirect3DSurface8_Base::LockRect = (LockRect_t)(d3d8 + MemoryAddresses::LOCK_RECT_OFFSET);
-        IDirect3DSurface8_Base::UnlockRect = (UnlockRect_t)(d3d8 + MemoryAddresses::UNLOCK_RECT_OFFSET);
-        IDirect3DSurface8_Base::Release = (Release_t)(d3d8 + MemoryAddresses::SURFACE_RELEASE_OFFSET);
+        //// Surface functions
+        //IDirect3DSurface8_Base::GetDesc = (GetDesc_t)(d3d8 + MemoryAddresses::GET_DESC_OFFSET);
+        //IDirect3DSurface8_Base::LockRect = (LockRect_t)(d3d8 + MemoryAddresses::LOCK_RECT_OFFSET);
+        //IDirect3DSurface8_Base::UnlockRect = (UnlockRect_t)(d3d8 + MemoryAddresses::UNLOCK_RECT_OFFSET);
+        //IDirect3DSurface8_Base::Release = (Release_t)(d3d8 + MemoryAddresses::SURFACE_RELEASE_OFFSET);
     }
 
     void RenderingService::HandleDRDERR(D3DERR errorCode)

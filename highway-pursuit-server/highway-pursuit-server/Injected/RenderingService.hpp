@@ -15,7 +15,7 @@ namespace Injected
         static constexpr float FULL_ZOOM = 10.0f;
 
         // Constructor
-        RenderingService(std::shared_ptr<HookManager> hookManager, const ServerParams::RenderParams& renderParams);
+        RenderingService(std::shared_ptr<HookManager> hookManager, IDirect3D8* d3d8, const ServerParams::RenderParams& renderParams);
 
         // Methods
         BufferFormat GetBufferFormat();
@@ -30,7 +30,8 @@ namespace Injected
         Data::ServerParams::RenderParams _renderParams;
 
         // private methods
-        void RegisterHooks();
+        void FindAddresses(IDirect3D8* d3d8);
+        void RegisterHooks(IDirect3D8* d3d8);
         void HandleDRDERR(D3DERR errorCode);
         BufferFormat GetBufferFormatFromSurface(IDirect3DSurface8* pSurface);
         IDirect3DDevice8* Device();

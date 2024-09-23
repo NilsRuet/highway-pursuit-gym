@@ -3,9 +3,11 @@
 
 namespace Data
 {
+    typedef void* LPUNKNOWN;
     typedef void IDirect3D8;
     typedef void IDirect3DDevice8;
     typedef void IDirect3DSurface8;
+    typedef void IDirectInput8;
     typedef void IDirectInputDevice8;
 
     typedef uint32_t D3DERR;

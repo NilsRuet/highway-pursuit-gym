@@ -8,7 +8,7 @@ namespace Injected
     class InputService
     {
     public:
-        InputService(std::shared_ptr<HookManager> hookManager);
+        InputService(std::shared_ptr<HookManager> hookManager, IDirectInput8* dinput);
         int GetInputCount();
         void SetInput(const std::vector<Input>& inputs);
 
@@ -21,7 +21,7 @@ namespace Injected
 
         uint32_t InputToOffset(Input input);
         uint32_t InputToKeyCode(Input input);
-        void RegisterHooks();
+        void RegisterHooks(IDirectInput8* dinput);
 
         // Hooks
         static InputService* Instance;
