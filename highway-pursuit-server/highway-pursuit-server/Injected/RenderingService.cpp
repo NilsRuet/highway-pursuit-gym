@@ -13,6 +13,7 @@ namespace Injected
     }
 
     // This HAS to be called from the main thread i.e a hook
+    // This fetches all adresses from the d3d8 dll, which depend on the windows version
     void RenderingService::InitFromMainThread(IDirect3D8* d3d8)
     {
         HPLogger::LogDebug("Find addr, d3d8 = "+HPLogger::ToHex((uintptr_t) d3d8));
@@ -24,14 +25,27 @@ namespace Injected
         HPLogger::LogDebug("create device at " + HPLogger::ToHex((uintptr_t)IDirect3D8_Base::CreateDevice));
         HPLogger::LogDebug("adapter display mode at " + HPLogger::ToHex((uintptr_t)IDirect3D8_Base::GetAdapterDisplayMode));
 
-        HWND mainWindow = reinterpret_cast<HWND>(_hookManager->GetModuleBase() + MemoryAddresses::MAIN_WINDOW_HANDLE);
+        HWND* mainWindow = reinterpret_cast<HWND*>(_hookManager->GetModuleBase() + MemoryAddresses::MAIN_WINDOW_HANDLE);
 
         D3DDISPLAYMODE displayMode;
         HandleD3DERR_GameThread(IDirect3D8_Base::GetAdapterDisplayMode(d3d8, 0, &displayMode));
-        HPLogger::LogDebug("Display format " + HPLogger::ToHex((uintptr_t)displayMode.Format));
+
+        // DEBUG checking window
+        {
+            char windowText[256];
+            if (GetWindowTextA(*mainWindow, windowText, sizeof(windowText)) == 0)
+            {
+                HPLogger::LogDebug("Failed to get window text! error " + std::to_string(GetLastError()));
+            }
+            else
+            {
+                HPLogger::LogDebug("Got window text! "+std::string(windowText));
+            }
+        }
+
 
         D3DPRESENT_PARAMETERS parameters;
-        parameters.hDeviceWindow = mainWindow;
+        parameters.hDeviceWindow = *mainWindow;
         parameters.SwapEffect = 1;
         parameters.BackBufferCount = 1;
         parameters.EnableAutoDepthStencil = 1;
@@ -44,7 +58,7 @@ namespace Injected
         // Try create device
         HPLogger::LogDebug("Create device");
         IDirect3DDevice8* device;
-        HandleD3DERR_GameThread(IDirect3D8_Base::CreateDevice(d3d8, 0, D3DDEVTYPE_HAL, mainWindow, 0x40, &parameters, &device));
+        HandleD3DERR_GameThread(IDirect3D8_Base::CreateDevice(d3d8, 0, D3DDEVTYPE_HAL, *mainWindow, 0x40, &parameters, &device));
 
         HPLogger::LogDebug("Device functions");
         // Device functions

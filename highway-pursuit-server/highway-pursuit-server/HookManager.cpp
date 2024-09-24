@@ -96,7 +96,7 @@ IDirect3D8* HookManager::Direct3DCreate8_Hook(UINT SDKVersion)
     // Wait for the hooks to be initialized
     HPLogger::LogDebug("Wait hooks");
     WaitForSingleObject(_d3d8WaitForHookThread, INFINITE);
-
+    HPLogger::LogDebug("Running!");
     return d3d8;
 }
 
