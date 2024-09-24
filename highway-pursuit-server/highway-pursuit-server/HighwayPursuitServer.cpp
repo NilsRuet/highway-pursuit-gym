@@ -28,6 +28,7 @@ HighwayPursuitServer::HighwayPursuitServer(const Data::ServerParams& options)
     // Install static hooks/services
     LARGE_INTEGER frequency;
     frequency.QuadPart = PERFORMANCE_COUNTER_FREQUENCY;
+    _windowService = std::make_unique<WindowService>(_hookManager);
     _episodeService = std::make_unique<EpisodeService>(_hookManager);
     _updateService = std::make_unique<UpdateService>(_hookManager, _options.isRealTime, _lockServerPool, _lockUpdatePool, FPS, frequency);
     _scoreService = std::make_unique<ScoreService>(_hookManager);

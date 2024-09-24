@@ -166,6 +166,7 @@
     <ClInclude Include="Shared\HighwayPursuitArgs.hpp" />
     <ClInclude Include="pch.h" />
     <ClInclude Include="Injected\UpdateService.hpp" />
+    <ClInclude Include="Injected\WindowService.hpp" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CommunicationManager.cpp" />
@@ -195,6 +196,9 @@
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../pch.h</PrecompiledHeaderFile>
     </ClCompile>
     <ClCompile Include="Injected\UpdateService.cpp">
+      <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../pch.h</PrecompiledHeaderFile>
+    </ClCompile>
+    <ClCompile Include="Injected\WindowService.cpp">
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">../pch.h</PrecompiledHeaderFile>
     </ClCompile>
   </ItemGroup>

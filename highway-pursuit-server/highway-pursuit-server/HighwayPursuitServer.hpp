@@ -8,6 +8,7 @@
 #include "Injected/RenderingService.hpp"
 #include "Injected/ScoreService.hpp"
 #include "Injected/UpdateService.hpp"
+#include "Injected/WindowService.hpp"
 
 using namespace Injected;
 
@@ -31,6 +32,7 @@ class HighwayPursuitServer
         const Data::ServerParams _options; // Game options
         std::unique_ptr<CommunicationManager> _communicationManager;
         std::shared_ptr<HookManager> _hookManager;
+        std::unique_ptr<WindowService> _windowService;
         std::unique_ptr<EpisodeService> _episodeService;
         std::unique_ptr<UpdateService> _updateService;
         std::unique_ptr<ScoreService> _scoreService;

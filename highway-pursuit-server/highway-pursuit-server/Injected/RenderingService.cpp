@@ -102,7 +102,6 @@ namespace Injected
 
         // Window Procedure
         LPVOID windowProcPtr = reinterpret_cast<LPVOID>(_hookManager->GetModuleBase() + MemoryAddresses::WINDOW_PROC_OFFSET);
-        _hookManager->RegisterHook(windowProcPtr, &WindowProcedure_StaticHook, &WindowProcedure_Base);
         // D3D8 functions
         _hookManager->RegisterHook(IDirect3D8_Base::CreateDevice, &CreateDevice_StaticHook, &IDirect3D8_Base::CreateDevice);
         _hookManager->RegisterHook(IDirect3DDevice8_Base::Reset, &Reset_StaticHook, &IDirect3DDevice8_Base::Reset);
@@ -204,19 +203,7 @@ namespace Injected
         return *ppDevice;
     }
 
-    void RenderingService::WindowProcedure_Hook(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-    {
-        const WPARAM focused = 1;
-        // Disable the "lose focus" callback to disable pausing
-        if (uMsg == WM_ACTIVATEAPP || uMsg == WM_ACTIVATE)
-        {
-            WindowProcedure_Base(hwnd, uMsg, focused, lParam);
-        }
-        else
-        {
-            WindowProcedure_Base(hwnd, uMsg, wParam, lParam);
-        }
-    }
+  
 
     D3DERR RenderingService::CreateDevice_Hook(IDirect3D8* pD3D8, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
     {
@@ -251,14 +238,6 @@ namespace Injected
         pPresentationParameters->BackBufferHeight = this->_renderParams.renderHeight;
     }
 
-    // Hook entry points
-    void __stdcall RenderingService::WindowProcedure_StaticHook(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-    {
-        if (RenderingService::Instance != nullptr)
-        {
-            RenderingService::Instance->WindowProcedure_Hook(hwnd, uMsg, wParam, lParam);
-        }
-    }
 
     D3DERR __stdcall RenderingService::CreateDevice_StaticHook(IDirect3D8* pD3D8, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
     {
@@ -288,8 +267,6 @@ namespace Injected
     }
 
     // Init base function pointers for winproc, d3d8, device, surface
-    RenderingService::WindowProcedure_t RenderingService::WindowProcedure_Base = nullptr;
-
     RenderingService::GetAdapterDisplayMode_t RenderingService::IDirect3D8_Base::GetAdapterDisplayMode = nullptr;
     RenderingService::CreateDevice_t RenderingService::IDirect3D8_Base::CreateDevice = nullptr;
 
