@@ -14,7 +14,7 @@ namespace Data
     constexpr uint32_t D3DERR_OK = 0;
     // Kind of an arbitrary choice to return a failing code if some D3D hook fails
     constexpr uint32_t D3DERR_NOTAVAILABLE = 2154;
-
+    constexpr uint32_t D3DPRESENTFLAG_LOCKABLE_BACKBUFFER = 0x00000001;
 
     class D3D8Exception : public std::runtime_error
     {
@@ -24,11 +24,10 @@ namespace Data
         D3D8Exception(D3DERR code)
             : std::runtime_error(FormatErrorMessage(code)), code(code) {}
 
-    private:
         static std::string FormatErrorMessage(D3DERR code)
         {
             std::ostringstream oss;
-            oss << "D3D8 error: 0x" << std::setfill('0') << std::hex << static_cast<int>(code);
+            oss << "D3D8 error: 0x" << std::setfill('0') << std::hex << static_cast<int>(code) << std::dec << " (" << (code & 0xFFFF) << ")";
             return oss.str();
         }
     };
@@ -127,20 +126,20 @@ namespace Data
 
     struct D3DPRESENT_PARAMETERS
     {
-        uint32_t BackBufferWidth;
-        uint32_t BackBufferHeight;
-        D3DFORMAT BackBufferFormat;
-        uint32_t BackBufferCount;
-        uint32_t MultiSampleType;
-        uint32_t SwapEffect;
-        std::uintptr_t hDeviceWindow;
-        uint32_t Windowed;
-        uint32_t EnableAutoDepthStencil;
-        D3DFORMAT AutoDepthStencilFormat;
-        uint32_t Flags;
+        uint32_t BackBufferWidth = 0;
+        uint32_t BackBufferHeight = 0;
+        D3DFORMAT BackBufferFormat = D3DFMT_UNKNOWN;
+        uint32_t BackBufferCount = 0;
+        uint32_t MultiSampleType = 0;
+        uint32_t SwapEffect = 0;
+        HWND hDeviceWindow = 0;
+        uint32_t Windowed = 0;
+        uint32_t EnableAutoDepthStencil = 0;
+        D3DFORMAT AutoDepthStencilFormat = D3DFMT_UNKNOWN;
+        uint32_t Flags = 0;
 
-        uint32_t FullScreen_RefreshRateInHz;
-        uint32_t FullScreen_PresentationInterval;
+        uint32_t FullScreen_RefreshRateInHz = 0;
+        uint32_t FullScreen_PresentationInterval = 0;
     };
 
     struct D3DSURFACE_DESC

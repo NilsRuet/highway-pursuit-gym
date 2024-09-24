@@ -33,10 +33,11 @@ class HighwayPursuitServer
         std::shared_ptr<HookManager> _hookManager;
         std::unique_ptr<EpisodeService> _episodeService;
         std::unique_ptr<UpdateService> _updateService;
-        std::unique_ptr<InputService> _inputService;
-        std::unique_ptr<RenderingService> _renderingService;
         std::unique_ptr<ScoreService> _scoreService;
         std::unique_ptr<CheatService> _cheatService;
+        // Those has to be initialized from the main thread
+        std::shared_ptr<RenderingService> _renderingService;
+        std::shared_ptr<InputService> _inputService;
 
         HANDLE _lockUpdatePool; // Update thread waits for this
         HANDLE _lockServerPool; // Server thread waits for this

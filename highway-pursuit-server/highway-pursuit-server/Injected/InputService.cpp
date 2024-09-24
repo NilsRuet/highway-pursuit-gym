@@ -4,10 +4,10 @@
 
 namespace Injected
 {
-    InputService::InputService(std::shared_ptr<HookManager> hookManager, IDirectInput8* dinput)
+    InputService::InputService(std::shared_ptr<HookManager> hookManager)
         : _hookManager(hookManager)
     {
-        RegisterHooks(dinput);
+        RegisterHooks();
     }
 
     int InputService::GetInputCount()
@@ -55,7 +55,7 @@ namespace Injected
     }
 
     // RegisterHooks method
-    void InputService::RegisterHooks(IDirectInput8* dinput)
+    void InputService::RegisterHooks()
     {
         InputService::Instance = this;
 

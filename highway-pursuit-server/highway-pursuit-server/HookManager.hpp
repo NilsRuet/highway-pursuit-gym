@@ -17,8 +17,8 @@ public:
     void HookAndLockD3D8Create();
     void HookAndLockDirectInputCreate();
 
-    IDirect3D8* GetD3D8Interface() const;
-    IDirectInput8* GetDInputInterface() const;
+    void InitializeWithD3D8(std::function<void(IDirect3D8*)> initializer);
+    void InitializeWithDirectInput(std::function<void(IDirectInput8*)> initializer);
 
     void UnlockD3D8Initialisation();
     void UnlockDInputInitialisation();
@@ -43,10 +43,12 @@ private:
     const std::string _d3d8ModuleName = "d3d8.dll";
     const std::string _dinputModuleName = "DINPUT8.dll";
 
-    HANDLE _d3d8Lock;
-    HANDLE _dInputLock;
-    IDirect3D8* _d3d8Interface;
-    IDirectInput8* _dInput8Interface;
+    HANDLE _d3d8WaitForMainThread;
+    HANDLE _d3d8WaitForHookThread;
+    HANDLE _dInputWaitForMainThread;
+    HANDLE _dInputWaitForHookThread;
+    std::function<void(IDirect3D8*)> _toCallWithD3D8;
+    std::function<void(IDirectInput8*)> _toCallWithDirectInput8;
 
     std::vector<LPVOID> _unactivatedHooks;
     uintptr_t _moduleBase;
