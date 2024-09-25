@@ -37,6 +37,7 @@ extern "C" __declspec(dllexport) void Run(LPVOID lpParam)
     {
         HPLogger::LogError(e.what());
     }
+    serverPtr = nullptr;
 }
 
 BOOL APIENTRY DllMain( HMODULE hModule,

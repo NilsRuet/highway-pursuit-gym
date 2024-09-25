@@ -11,7 +11,7 @@ namespace Injected
         
         // Methods
         void UpdateTime();
-        void DisableSemaphores();
+        void NotifyShutdown();
 
     private:
         static constexpr int SERVER_TIMEOUT = 30000; // To avoid waiting infinitely

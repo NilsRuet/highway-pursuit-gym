@@ -43,8 +43,19 @@ HighwayPursuitServer::HighwayPursuitServer(const Data::ServerParams& options)
 
 HighwayPursuitServer::~HighwayPursuitServer()
 {
-    _updateService->DisableSemaphores();
-    ReleaseSemaphore(_lockUpdatePool, 1, nullptr);
+    // Try to shutdown game, release semaphore to ensure the game sees the notification
+    try
+    {
+        _updateService->NotifyShutdown();
+        ReleaseSemaphore(_lockUpdatePool, 1, nullptr);
+    }
+    catch (std::exception e)
+    {
+        HPLogger::LogException(e);
+    }
+
+    // Release all hooks/semaphores
+    _hookManager->Release();
     CloseHandle(_lockUpdatePool);
     CloseHandle(_lockServerPool);
 }
@@ -82,15 +93,14 @@ void HighwayPursuitServer::Run()
     // Exception handling for the server thread
     catch (HighwayPursuitException e)
     {
-        _communicationManager->WriteException(e);
         HPLogger::LogException(e);
+        _communicationManager->WriteException(e);
     }
     catch (std::exception e)
     {
-        _communicationManager->WriteException(HighwayPursuitException(ErrorCode::NATIVE_ERROR));
         HPLogger::LogException(e);
+        _communicationManager->WriteException(HighwayPursuitException(ErrorCode::NATIVE_ERROR));
     }
-    _hookManager->Release();
 }
 
 void HighwayPursuitServer::WaitGameUpdate()
@@ -144,9 +154,6 @@ void HighwayPursuitServer::HandleInstruction(InstructionCode code)
     case InstructionCode::CLOSE:
         // Notify end of loop
         _serverTerminated = true;
-        // ensure the updates hooks are non-blocking
-        _updateService->DisableSemaphores();
-        ReleaseSemaphore(_lockUpdatePool, 1, nullptr);
         break;
     default:
         break;

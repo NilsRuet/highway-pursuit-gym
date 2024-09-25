@@ -26,6 +26,7 @@ namespace Injected
         static const uint32_t OIL_OFFSET = 0x969FC;
         static const uint32_t SMOKE_OFFSET = 0x97A00;
         static const uint32_t MISSILES_OFFSET = 0x97A04;
+        static const uint32_t SHUTDOWN_FLAG_OFFSET = 0x960c6;
 
         // IDirect3D8
         static const uint32_t GET_ADAPATER_DISPLAY_MODE_OFFSET = 0x8;

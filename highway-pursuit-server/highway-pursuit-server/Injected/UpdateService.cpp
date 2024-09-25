@@ -27,9 +27,12 @@ namespace Injected
         }
     }
 
-    void UpdateService::DisableSemaphores()
+    void UpdateService::NotifyShutdown()
     {
-        _useSemaphores = false;
+        _useSemaphores = false; // Stop waiting for the semaphore in the main game loop hooks
+        // Set the bool that shutdowns the game
+        uint8_t* shouldShutdown = reinterpret_cast<uint8_t*>(_hookManager->GetModuleBase() + MemoryAddresses::SHUTDOWN_FLAG_OFFSET);
+        *shouldShutdown = 0x1;
     }
 
     void UpdateService::RegisterHooks()
