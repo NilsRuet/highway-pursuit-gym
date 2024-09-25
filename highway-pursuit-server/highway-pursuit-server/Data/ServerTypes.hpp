@@ -54,6 +54,7 @@ namespace Data
     class HighwayPursuitConstants
     {
     public:
+        static const UINT D3D8_SDK_VERSION = 0xDC;
         static const uint32_t CHEATED_CONSTANT_LIVES = 3;
         static const uint32_t ACTION_COUNT = 8;
     };

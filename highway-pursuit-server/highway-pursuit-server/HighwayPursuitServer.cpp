@@ -35,12 +35,10 @@ HighwayPursuitServer::HighwayPursuitServer(const Data::ServerParams& options)
     _cheatService = std::make_unique<CheatService>(_hookManager);
 
     // These need the app to be partly initialized to properly hook
-    _renderingService = nullptr;
-    _inputService = nullptr;
-    _hookManager->HookAndLockD3D8Create();
-    _hookManager->HookAndLockDirectInputCreate();
-    // Enable static hooks
-    _hookManager->EnableAllNewHooks();
+    _renderingService = std::make_shared<RenderingService>(_hookManager, _options.renderParams);
+    _renderingService->SetFullscreenFlag(false);
+    _inputService = std::make_shared<InputService>(_hookManager);
+    _hookManager->EnableHooks();
 }
 
 HighwayPursuitServer::~HighwayPursuitServer()
@@ -49,30 +47,6 @@ HighwayPursuitServer::~HighwayPursuitServer()
     ReleaseSemaphore(_lockUpdatePool, 1, nullptr);
     CloseHandle(_lockUpdatePool);
     CloseHandle(_lockServerPool);
-}
-
-void HighwayPursuitServer::Init()
-{
-    // Init the service reliant on d3d8
-    _renderingService = std::make_shared<RenderingService>(_hookManager, _options.renderParams);
-    
-    // TODO: this is very protocol like, maybe this can be be better organized?
-    // D3D8 is initialized after this call, pass the rendering service
-    _hookManager->InitializeWithD3D8([this](IDirect3D8* d3d8){ _renderingService->InitFromMainThread(d3d8); });
-
-    // Enable d3d8 hooks, resume d3d8 initialisation
-    _renderingService->Enable();
-    _renderingService->SetFullscreenFlag(false);
-    _hookManager->EnableAllNewHooks();
-    _hookManager->UnlockD3D8Initialisation();
-
-    // TODO: input service
-    // Init the service reliant on dinput
-    _inputService = std::make_shared<InputService>(_hookManager);
-    _hookManager->InitializeWithDirectInput(nullptr);
-    // Enable dinput hooks, resume dinput initialisation
-    _hookManager->EnableAllNewHooks();
-    _hookManager->UnlockDInputInitialisation();
 }
 
 void HighwayPursuitServer::Run()

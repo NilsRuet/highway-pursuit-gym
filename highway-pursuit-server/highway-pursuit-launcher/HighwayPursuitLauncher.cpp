@@ -46,7 +46,6 @@ namespace HighwayPursuitLauncher
             // Rendering enabled
             bool renderEnabled = parseBool(argv[ARG_ENABLE_RENDERING]);
             
-
             // Inject the DLL into the target process
             auto args = Shared::HighwayPursuitArgs(isRealTime, frameSkip, renderWidth, renderHeight, renderEnabled, argv[ARG_LOG_DIR_PATH], argv[ARG_SHARED_RESOURCES_PREFIX]);
             if (!Injection::CreateAndInject(targetExe, targetDll, args))

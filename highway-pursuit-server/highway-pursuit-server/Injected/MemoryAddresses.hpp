@@ -30,6 +30,7 @@ namespace Injected
         // IDirect3D8
         static const uint32_t GET_ADAPATER_DISPLAY_MODE_OFFSET = 0x8;
         static const uint32_t CREATE_DEVICE_OFFSET = 0xF;
+        static const uint32_t D3D8_RELEASE_OFFSET = 0x2;
 
         // IDirect3DDevice8
         static const uint32_t RESET_DEVICE_OFFSET = 0xE;

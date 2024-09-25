@@ -31,7 +31,6 @@ extern "C" __declspec(dllexport) void Run(LPVOID lpParam)
 {
     try
     {
-        serverPtr->Init();
         serverPtr->Run();
     }
     catch (const std::runtime_error& e)

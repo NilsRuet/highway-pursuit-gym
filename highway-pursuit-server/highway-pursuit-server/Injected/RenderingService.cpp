@@ -10,42 +10,38 @@ namespace Injected
         _hookManager(hookManager),
         _renderParams(renderParams)
     {
+        this->FindAddresses();
+        this->RegisterHooks();
     }
 
-    // This HAS to be called from the main thread i.e a hook
     // This fetches all adresses from the d3d8 dll, which depend on the windows version
-    void RenderingService::InitFromMainThread(IDirect3D8* d3d8)
+    void RenderingService::FindAddresses()
     {
-        HPLogger::LogDebug("Find addr, d3d8 = "+HPLogger::ToHex((uintptr_t) d3d8));
-        // Create a device to retrieve IDirect3DDevice8's vtable
-        uintptr_t* d3d8_vtable = *reinterpret_cast<uintptr_t**>(d3d8);
-        HPLogger::LogDebug("find vtable device at "+HPLogger::ToHex((uintptr_t)d3d8_vtable));
-        IDirect3D8_Base::GetAdapterDisplayMode = reinterpret_cast<GetAdapterDisplayMode_t>(d3d8_vtable[MemoryAddresses::GET_ADAPATER_DISPLAY_MODE_OFFSET]);
-        IDirect3D8_Base::CreateDevice = reinterpret_cast<CreateDevice_t>(d3d8_vtable[MemoryAddresses::CREATE_DEVICE_OFFSET]);
-        HPLogger::LogDebug("create device at " + HPLogger::ToHex((uintptr_t)IDirect3D8_Base::CreateDevice));
-        HPLogger::LogDebug("adapter display mode at " + HPLogger::ToHex((uintptr_t)IDirect3D8_Base::GetAdapterDisplayMode));
+        // Create a minimalistic invisible window, to get a valid handle
+        MinimalWindow mappingWindow;
 
-        HWND* mainWindow = reinterpret_cast<HWND*>(_hookManager->GetModuleBase() + MemoryAddresses::MAIN_WINDOW_HANDLE);
-
-        D3DDISPLAYMODE displayMode;
-        HandleD3DERR_GameThread(IDirect3D8_Base::GetAdapterDisplayMode(d3d8, 0, &displayMode));
-
-        // DEBUG checking window
+        // Find d3d8 create
+        IDirect3D8_Base::Direct3DCreate8 = reinterpret_cast<Direct3DCreate8_t>(GetProcAddress(_hookManager->GetD3D8(), "Direct3DCreate8"));
+        if (IDirect3D8_Base::Direct3DCreate8 == nullptr)
         {
-            char windowText[256];
-            if (GetWindowTextA(*mainWindow, windowText, sizeof(windowText)) == 0)
-            {
-                HPLogger::LogDebug("Failed to get window text! error " + std::to_string(GetLastError()));
-            }
-            else
-            {
-                HPLogger::LogDebug("Got window text! "+std::string(windowText));
-            }
+            throw std::runtime_error("Failed to get Direct3DCreate8");
         }
 
+        // Create a D3D8 instance
+        D3D8Wrapper d3d8(HighwayPursuitConstants::D3D8_SDK_VERSION);
+
+        // Find d3d8 functions
+        uintptr_t* d3d8_vtable = *reinterpret_cast<uintptr_t**>(d3d8.D3D8());
+        IDirect3D8_Base::GetAdapterDisplayMode = reinterpret_cast<GetAdapterDisplayMode_t>(d3d8_vtable[MemoryAddresses::GET_ADAPATER_DISPLAY_MODE_OFFSET]);
+        IDirect3D8_Base::CreateDevice = reinterpret_cast<CreateDevice_t>(d3d8_vtable[MemoryAddresses::CREATE_DEVICE_OFFSET]);
+        IDirect3D8_Base::Release = reinterpret_cast<Direct3DRelease_t>(d3d8_vtable[MemoryAddresses::D3D8_RELEASE_OFFSET]);
+
+        // Device params
+        D3DDISPLAYMODE displayMode;
+        HandleD3DERR(IDirect3D8_Base::GetAdapterDisplayMode(d3d8.D3D8(), 0, &displayMode));
 
         D3DPRESENT_PARAMETERS parameters;
-        parameters.hDeviceWindow = *mainWindow;
+        parameters.hDeviceWindow = mappingWindow.Handle();
         parameters.SwapEffect = 1;
         parameters.BackBufferCount = 1;
         parameters.EnableAutoDepthStencil = 1;
@@ -55,44 +51,27 @@ namespace Injected
         parameters.MultiSampleType = 0;
         parameters.Flags = D3DPRESENTFLAG_LOCKABLE_BACKBUFFER;
 
-        // Try create device
-        HPLogger::LogDebug("Create device");
-        IDirect3DDevice8* device;
-        HandleD3DERR_GameThread(IDirect3D8_Base::CreateDevice(d3d8, 0, D3DDEVTYPE_HAL, *mainWindow, 0x40, &parameters, &device));
+        // Create device
+        D3D8DeviceWrapper device(d3d8.D3D8(), 0, D3DDEVTYPE_HAL, mappingWindow.Handle(), 0x40, &parameters);
 
-        HPLogger::LogDebug("Device functions");
-        // Device functions
-        uintptr_t* d3ddevice_vtable = *reinterpret_cast<uintptr_t**>(device);
+        // Find device functions
+        uintptr_t* d3ddevice_vtable = *reinterpret_cast<uintptr_t**>(device.Device());
         IDirect3DDevice8_Base::GetBackBuffer = reinterpret_cast<GetBackBuffer_t>(d3ddevice_vtable[MemoryAddresses::GET_BACK_BUFFER_OFFSET]);
         IDirect3DDevice8_Base::Reset = reinterpret_cast<Reset_t>(d3ddevice_vtable[MemoryAddresses::RESET_DEVICE_OFFSET]);
         IDirect3DDevice8_Base::Present = reinterpret_cast<Present_t>(d3ddevice_vtable[MemoryAddresses::PRESENT_OFFSET]);
         IDirect3DDevice8_Base::Release = reinterpret_cast<DeviceRelease_t>(d3ddevice_vtable[MemoryAddresses::DEVICE_RELEASE_OFFSET]);
-        // Release
 
-        // Call get back buffer to create a surface and access IDirect3DSurface8's vtable
-        // Try create surface
-        IDirect3DSurface8* surface;
-        HandleD3DERR_GameThread(IDirect3DDevice8_Base::GetBackBuffer(device, 0, D3DBACKBUFFER_TYPE::MONO, &surface));
+        // Call get back buffer to create a surface
+        IDirect3DSurface8* pSurface;
+        HandleD3DERR(IDirect3DDevice8_Base::GetBackBuffer(device.Device(), 0, D3DBACKBUFFER_TYPE::MONO, &pSurface));
+        D3D8SurfaceWrapper surface(pSurface);
 
-        HPLogger::LogDebug("Surface functions");
-        // Surface function
-        uintptr_t* d3dsurface_vtable = *reinterpret_cast<uintptr_t**>(surface);
+        // Find surface functions
+        uintptr_t* d3dsurface_vtable = *reinterpret_cast<uintptr_t**>(surface.Surface());
         IDirect3DSurface8_Base::GetDesc = reinterpret_cast<GetDesc_t>(d3dsurface_vtable[MemoryAddresses::GET_DESC_OFFSET]);
         IDirect3DSurface8_Base::LockRect = reinterpret_cast<LockRect_t>(d3dsurface_vtable[MemoryAddresses::LOCK_RECT_OFFSET]);
         IDirect3DSurface8_Base::UnlockRect = reinterpret_cast<UnlockRect_t>(d3dsurface_vtable[MemoryAddresses::UNLOCK_RECT_OFFSET]);
         IDirect3DSurface8_Base::Release = reinterpret_cast<SurfaceRelease_t>(d3dsurface_vtable[MemoryAddresses::SURFACE_RELEASE_OFFSET]);
-
-        // Release surface
-        D3DERR releaseSurfaceErr = IDirect3DSurface8_Base::Release(surface);
-        // Release device
-        D3DERR releaseDeviceErr = IDirect3DDevice8_Base::Release(device);
-        HandleD3DERR_GameThread(releaseSurfaceErr);
-        HandleD3DERR_GameThread(releaseDeviceErr);
-    }
-
-    void RenderingService::Enable()
-    {
-        this->RegisterHooks();
     }
 
     void RenderingService::RegisterHooks()
@@ -100,8 +79,6 @@ namespace Injected
         // Setup pointers for static hooks
         RenderingService::Instance = this;
 
-        // Window Procedure
-        LPVOID windowProcPtr = reinterpret_cast<LPVOID>(_hookManager->GetModuleBase() + MemoryAddresses::WINDOW_PROC_OFFSET);
         // D3D8 functions
         _hookManager->RegisterHook(IDirect3D8_Base::CreateDevice, &CreateDevice_StaticHook, &IDirect3D8_Base::CreateDevice);
         _hookManager->RegisterHook(IDirect3DDevice8_Base::Reset, &Reset_StaticHook, &IDirect3DDevice8_Base::Reset);
@@ -112,15 +89,6 @@ namespace Injected
     {
         if (errorCode > 0)
         {
-            throw D3D8Exception(errorCode);
-        }
-    }
-
-    void RenderingService::HandleD3DERR_GameThread(D3DERR errorCode)
-    {
-        if (errorCode > 0)
-        {
-            HPLogger::LogError(D3D8Exception::FormatErrorMessage(errorCode));
             throw D3D8Exception(errorCode);
         }
     }
@@ -203,8 +171,6 @@ namespace Injected
         return *ppDevice;
     }
 
-  
-
     D3DERR RenderingService::CreateDevice_Hook(IDirect3D8* pD3D8, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters, IDirect3DDevice8** ppReturnedDeviceInterface)
     {
         UpdatePresentationParams(pPresentationParameters);
@@ -266,9 +232,118 @@ namespace Injected
         return D3DERR_NOTAVAILABLE;
     }
 
-    // Init base function pointers for winproc, d3d8, device, surface
+
+    // Inner classes for managed resources
+    // Window wrapper
+    RenderingService::MinimalWindow::MinimalWindow()
+    {
+        // Define a minimal window class
+        const char CLASS_NAME[] = "MinimalWindow";
+        HMODULE hInstance = GetModuleHandle(NULL);
+        WNDCLASSA wc = { };
+        wc.lpfnWndProc = DefWindowProcA;
+        wc.hInstance = hInstance;
+        wc.lpszClassName = CLASS_NAME;
+
+        // Register the window class
+        RegisterClassA(&wc);
+
+        // Create a simple window
+        HWND hwnd = CreateWindowExA(
+            0,
+            CLASS_NAME,
+            "Minimal window",
+            WS_POPUP,
+            0, 0, 1, 1, // Small position/size, irrelevant since hidden
+            NULL,
+            NULL,
+            hInstance,
+            NULL
+        );
+
+        // Check the handle
+        if (hwnd == NULL)
+        {
+            throw std::runtime_error("Failed to create minimal window");
+        }
+
+        _handle = hwnd;
+    }
+
+    RenderingService::MinimalWindow::~MinimalWindow()
+    {
+        DestroyWindow(_handle);
+    }
+
+    HWND RenderingService::MinimalWindow::Handle() const
+    {
+        return _handle;
+    }
+
+    // D3D8 wrapper
+    RenderingService::D3D8Wrapper::D3D8Wrapper(UINT SDK_VERSION)
+    {
+        // Create d3d8
+        _d3d8 = IDirect3D8_Base::Direct3DCreate8(SDK_VERSION);
+        if (_d3d8 == nullptr)
+        {
+            throw std::runtime_error("Failed to create Direct3D");
+        }
+    }
+
+    RenderingService::D3D8Wrapper::~D3D8Wrapper()
+    {
+    }
+
+    IDirect3D8* RenderingService::D3D8Wrapper::D3D8() const
+    {
+        return _d3d8;
+    }
+
+    // Device wrapper
+    RenderingService::D3D8DeviceWrapper::D3D8DeviceWrapper(IDirect3D8* d3d8, UINT Adapter, D3DDEVTYPE DeviceType, HWND hFocusWindow, DWORD BehaviorFlags, D3DPRESENT_PARAMETERS* pPresentationParameters)
+    {
+        IDirect3DDevice8* pDevice;
+        HandleD3DERR(IDirect3D8_Base::CreateDevice(d3d8, Adapter, DeviceType, hFocusWindow, BehaviorFlags, pPresentationParameters, &pDevice));
+        _pDevice = pDevice;
+    }
+
+    RenderingService::D3D8DeviceWrapper::~D3D8DeviceWrapper()
+    {
+        if (IDirect3DDevice8_Base::Release != nullptr)
+        {
+            HandleD3DERR(IDirect3DDevice8_Base::Release(_pDevice));
+        }
+    }
+
+    IDirect3DSurface8* RenderingService::D3D8DeviceWrapper::Device() const
+    {
+        return _pDevice;
+    }
+
+    // Surface wrapper
+    RenderingService::D3D8SurfaceWrapper::D3D8SurfaceWrapper(IDirect3DSurface8* pSurface) : _pSurface(pSurface)
+    {
+    }
+
+    RenderingService::D3D8SurfaceWrapper::~D3D8SurfaceWrapper()
+    {
+        if (IDirect3DSurface8_Base::Release != nullptr)
+        {
+            HandleD3DERR(IDirect3DSurface8_Base::Release(_pSurface));
+        }
+    }
+
+    IDirect3DSurface8* RenderingService::D3D8SurfaceWrapper::Surface() const
+    {
+        return _pSurface;
+    }
+
+    // Init static members
     RenderingService::GetAdapterDisplayMode_t RenderingService::IDirect3D8_Base::GetAdapterDisplayMode = nullptr;
     RenderingService::CreateDevice_t RenderingService::IDirect3D8_Base::CreateDevice = nullptr;
+    RenderingService::Direct3DCreate8_t RenderingService::IDirect3D8_Base::Direct3DCreate8 = nullptr;
+    RenderingService::Direct3DRelease_t RenderingService::IDirect3D8_Base::Release = nullptr;
 
     RenderingService::Reset_t RenderingService::IDirect3DDevice8_Base::Reset = nullptr;
     RenderingService::Present_t RenderingService::IDirect3DDevice8_Base::Present = nullptr;
