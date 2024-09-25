@@ -119,13 +119,23 @@ namespace Injected
             IDirect3DSurface8* Device() const;
         };
 
-        class D3D8SurfaceWrapper
+        class D3D8BackBufferSurfaceWrapper
         {
             IDirect3DSurface8* _pSurface;
         public:
-            D3D8SurfaceWrapper(IDirect3DSurface8* pSurface);
-            ~D3D8SurfaceWrapper();
+            D3D8BackBufferSurfaceWrapper(IDirect3DDevice8* pDevice, UINT BackBuffer, D3DBACKBUFFER_TYPE Type);
+            ~D3D8BackBufferSurfaceWrapper();
             IDirect3DSurface8* Surface() const;
+        };
+
+        class D3D8LockedRectWrapper
+        {
+            std::shared_ptr<D3DLOCKED_RECT> _lockedRect;
+            IDirect3DSurface8* _pSurface;
+        public:
+            D3D8LockedRectWrapper(IDirect3DSurface8* pSurface, CONST RECT* pRect, DWORD Flags);
+            ~D3D8LockedRectWrapper();
+            std::shared_ptr<D3DLOCKED_RECT> Rect();
         };
     };
 }

@@ -62,9 +62,7 @@ namespace Injected
         IDirect3DDevice8_Base::Release = reinterpret_cast<DeviceRelease_t>(d3ddevice_vtable[MemoryAddresses::DEVICE_RELEASE_OFFSET]);
 
         // Call get back buffer to create a surface
-        IDirect3DSurface8* pSurface;
-        HandleD3DERR(IDirect3DDevice8_Base::GetBackBuffer(device.Device(), 0, D3DBACKBUFFER_TYPE::MONO, &pSurface));
-        D3D8SurfaceWrapper surface(pSurface);
+        D3D8BackBufferSurfaceWrapper surface(device.Device(), 0, D3DBACKBUFFER_TYPE::MONO);
 
         // Find surface functions
         uintptr_t* d3dsurface_vtable = *reinterpret_cast<uintptr_t**>(surface.Surface());
@@ -95,28 +93,9 @@ namespace Injected
 
     BufferFormat RenderingService::GetBufferFormat()
     {
-        BufferFormat res;
         // Get the back buffer surface
-        IDirect3DSurface8* pBackBufferSurface = nullptr;
-        HandleD3DERR(IDirect3DDevice8_Base::GetBackBuffer(Device(), 0, D3DBACKBUFFER_TYPE::MONO, &pBackBufferSurface));
-        try
-        {
-            // Get the buffer format from the surface
-            res = GetBufferFormatFromSurface(pBackBufferSurface);
-        }
-        catch (...)
-        {
-            if (pBackBufferSurface)
-            {
-                IDirect3DSurface8_Base::Release(pBackBufferSurface);
-            }
-            throw;
-        }
-        if (pBackBufferSurface)
-        {
-            IDirect3DSurface8_Base::Release(pBackBufferSurface);
-        }
-        return res;
+        D3D8BackBufferSurfaceWrapper surface(Device(), 0, D3DBACKBUFFER_TYPE::MONO);
+        return GetBufferFormatFromSurface(surface.Surface());
     }
 
     void RenderingService::SetFullscreenFlag(bool useFullscreen)
@@ -134,27 +113,13 @@ namespace Injected
     void RenderingService::Screenshot(std::function<void(void*, const BufferFormat&)> pixelDataHandler)
     {
         // Back buffer method
-        IDirect3DSurface8* pBackBufferSurface;
-        HandleD3DERR(IDirect3DDevice8_Base::GetBackBuffer(Device(), 0, D3DBACKBUFFER_TYPE::MONO, &pBackBufferSurface));
-        BufferFormat format = GetBufferFormatFromSurface(pBackBufferSurface);
-        RECT renderingRect = { 0,0,static_cast<LONG>(format.width), static_cast<LONG>(format.height) };
+        D3D8BackBufferSurfaceWrapper backbuffer(Device(), 0, D3DBACKBUFFER_TYPE::MONO);
+        BufferFormat format = GetBufferFormatFromSurface(backbuffer.Surface());
+        RECT renderingRect{ 0,0,static_cast<LONG>(format.width), static_cast<LONG>(format.height) };
 
-        try
-        {
-            // Lock pixels
-            D3DLOCKED_RECT lockedRect;
-            HandleD3DERR(IDirect3DSurface8_Base::LockRect(pBackBufferSurface, &lockedRect, &renderingRect, LOCK_RECT_FLAGS::D3DLOCK_READONLY));
-            pixelDataHandler(lockedRect.pBits, format);
-        }
-        catch(...)
-        {
-            // Release resources
-            HandleD3DERR(IDirect3DSurface8_Base::UnlockRect(pBackBufferSurface));
-            HandleD3DERR(IDirect3DSurface8_Base::Release(pBackBufferSurface));
-            throw;
-        }
-        HandleD3DERR(IDirect3DSurface8_Base::UnlockRect(pBackBufferSurface));
-        HandleD3DERR(IDirect3DSurface8_Base::Release(pBackBufferSurface));
+        // Lock pixels
+        D3D8LockedRectWrapper lockedRect(backbuffer.Surface(), &renderingRect, LOCK_RECT_FLAGS::D3DLOCK_READONLY);
+        pixelDataHandler(lockedRect.Rect()->pBits, format);
     }
 
 
@@ -293,6 +258,7 @@ namespace Injected
 
     RenderingService::D3D8Wrapper::~D3D8Wrapper()
     {
+        HandleD3DERR(IDirect3D8_Base::Release(_d3d8));
     }
 
     IDirect3D8* RenderingService::D3D8Wrapper::D3D8() const
@@ -310,10 +276,7 @@ namespace Injected
 
     RenderingService::D3D8DeviceWrapper::~D3D8DeviceWrapper()
     {
-        if (IDirect3DDevice8_Base::Release != nullptr)
-        {
-            HandleD3DERR(IDirect3DDevice8_Base::Release(_pDevice));
-        }
+        HandleD3DERR(IDirect3DDevice8_Base::Release(_pDevice));
     }
 
     IDirect3DSurface8* RenderingService::D3D8DeviceWrapper::Device() const
@@ -322,21 +285,37 @@ namespace Injected
     }
 
     // Surface wrapper
-    RenderingService::D3D8SurfaceWrapper::D3D8SurfaceWrapper(IDirect3DSurface8* pSurface) : _pSurface(pSurface)
+    RenderingService::D3D8BackBufferSurfaceWrapper::D3D8BackBufferSurfaceWrapper(IDirect3DDevice8* pDevice, UINT BackBuffer, D3DBACKBUFFER_TYPE Type)
     {
+        IDirect3DSurface8* pSurface;
+        HandleD3DERR(IDirect3DDevice8_Base::GetBackBuffer(pDevice, BackBuffer, Type, &pSurface));
+        _pSurface = pSurface;
     }
 
-    RenderingService::D3D8SurfaceWrapper::~D3D8SurfaceWrapper()
+    RenderingService::D3D8BackBufferSurfaceWrapper::~D3D8BackBufferSurfaceWrapper()
     {
-        if (IDirect3DSurface8_Base::Release != nullptr)
-        {
-            HandleD3DERR(IDirect3DSurface8_Base::Release(_pSurface));
-        }
+        HandleD3DERR(IDirect3DSurface8_Base::Release(_pSurface));
     }
 
-    IDirect3DSurface8* RenderingService::D3D8SurfaceWrapper::Surface() const
+    IDirect3DSurface8* RenderingService::D3D8BackBufferSurfaceWrapper::Surface() const
     {
         return _pSurface;
+    }
+
+    RenderingService::D3D8LockedRectWrapper::D3D8LockedRectWrapper(IDirect3DSurface8* pSurface, CONST RECT* pRect, DWORD Flags) : _pSurface(pSurface)
+    {
+        _lockedRect = std::make_shared<D3DLOCKED_RECT>();
+        HandleD3DERR(IDirect3DSurface8_Base::LockRect(_pSurface, _lockedRect.get(), pRect, Flags));
+    }
+
+    RenderingService::D3D8LockedRectWrapper::~D3D8LockedRectWrapper()
+    {
+        HandleD3DERR(IDirect3DSurface8_Base::UnlockRect(_pSurface));
+    }
+
+    std::shared_ptr<D3DLOCKED_RECT> RenderingService::D3D8LockedRectWrapper::Rect()
+    {
+        return _lockedRect;
     }
 
     // Init static members
