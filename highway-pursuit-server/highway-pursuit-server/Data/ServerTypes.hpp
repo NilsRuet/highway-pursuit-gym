@@ -54,7 +54,10 @@ namespace Data
     class HighwayPursuitConstants
     {
     public:
+        static constexpr GUID IID_IDirectInput8A = { 0xBF798030,0x483A,0x4DA2, {0xAA,0x99,0x5D,0x64,0xED,0x36,0x97,0x00} };
+        static constexpr GUID GUID_SysKeyboard = { 0x6F1D2B61,0xD5A0,0x11CF,{ 0xBF,0xC7,0x44,0x45,0x53,0x54,0x00,0x00} };
         static const UINT D3D8_SDK_VERSION = 0xDC;
+        static const DWORD DINPUT_VERSION = 0x800;
         static const uint32_t CHEATED_CONSTANT_LIVES = 3;
         static const uint32_t ACTION_COUNT = 8;
     };

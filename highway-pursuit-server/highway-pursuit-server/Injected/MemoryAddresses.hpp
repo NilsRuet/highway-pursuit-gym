@@ -45,7 +45,11 @@ namespace Injected
         static const uint32_t SURFACE_RELEASE_OFFSET = 0x2;
 
         // DINPUT offsets
-        static const uint32_t GET_DEVICE_STATE_OFFSET = 0xD550;
-        static const uint32_t SET_COOPERATIVE_LEVEL_OFFSET = 0xC550;
+        static const uint32_t DINPUT_RELEASE_OFFSET = 0x2;
+        static const uint32_t DINPUT_CREATE_DEVICE_OFFSET = 0x3;
+        // DINPUT device offsets
+        static const uint32_t DINPUT_RELEASE_DEVICE_OFFSET = 0x2;
+        static const uint32_t GET_DEVICE_STATE_OFFSET = 0x9;
+        static const uint32_t SET_COOPERATIVE_LEVEL_OFFSET = 0x13;
     };
 }
