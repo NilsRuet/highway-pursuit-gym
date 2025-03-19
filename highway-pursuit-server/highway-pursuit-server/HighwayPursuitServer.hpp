@@ -18,7 +18,7 @@ class HighwayPursuitServer
         static constexpr float FPS = 60.0f;
         static constexpr long PERFORMANCE_COUNTER_FREQUENCY = 1000000;
         static constexpr int GAME_TIMEOUT = 10000; // results in an error if the game fails to update
-        static constexpr int METRICS_UPDATE_FREQUENCY = static_cast<int>(FPS * 30); // update info every 30s of gameplay
+        static constexpr int PERIODIC_METRICS_FREQUENCY = static_cast<int>(FPS * 30); // update info every 30s of gameplay
         static constexpr int LOG_FREQUENCY = static_cast<int>(FPS * 60); // update metrics every minute of gameplay
 
         HighwayPursuitServer(const Data::ServerParams& options);
@@ -48,6 +48,8 @@ class HighwayPursuitServer
         Data::Termination _lastStepTermination;
         Data::Info _currentInfo;
         ULONGLONG _startTick;
+        ULONGLONG _cumulatedServerTicks;
+        ULONGLONG _cumulatedGameTicks;
 
         void WaitGameUpdate();
         void SkipIntro();
@@ -55,7 +57,6 @@ class HighwayPursuitServer
         void Reset(bool startNewGame);
         void ExecuteForOneFrame(std::function<void()> action);
         void Step(std::function<void(std::function<void()>)> frameWrapper = nullptr);
-        void HandleMetrics();
         float ComputeMemoryUsage();
 };
 

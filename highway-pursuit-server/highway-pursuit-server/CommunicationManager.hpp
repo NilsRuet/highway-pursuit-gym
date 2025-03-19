@@ -8,7 +8,7 @@ using namespace Data;
 class CommunicationManager
 {
 public:
-    static constexpr uint32_t CLIENT_TIMEOUT = 15000; // Timeout in ms
+    static constexpr uint32_t CLIENT_TIMEOUT = 60000; // Timeout in ms
 
     CommunicationManager(const ServerParams& args);
     ~CommunicationManager();
@@ -50,7 +50,7 @@ private:
     template <typename T>
     static void WriteToBuffer(const T& data, void* pBuffer)
     {
-        if (pBuffer == nullptr)
+        if (pBuffer == nullptr) 
         {
             throw std::runtime_error("Invalid buffer in WriteToBuffer");
         }

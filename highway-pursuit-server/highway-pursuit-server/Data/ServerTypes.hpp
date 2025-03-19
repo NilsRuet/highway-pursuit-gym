@@ -177,8 +177,10 @@ namespace Data
     {
         float tps;
         float memory;
+        float serverTime;
+        float gameTime;
 
-        Info(float tps, float memory) : tps(tps), memory(memory) {}
+        Info(float tps, float memory, float serverTime, float gameTime) : tps(tps), memory(memory), serverTime(serverTime), gameTime(gameTime) {}
     };
 
     struct Reward

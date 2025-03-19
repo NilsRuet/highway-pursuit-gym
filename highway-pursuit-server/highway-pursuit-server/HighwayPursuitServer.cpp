@@ -7,8 +7,10 @@ HighwayPursuitServer::HighwayPursuitServer(const Data::ServerParams& options)
     _serverTerminated(false),
     _totalEllapsedFrames(0),
     _lastStepTermination(false, false),
-    _currentInfo(Data::Info(0.0f, 0.0f)),
-    _startTick(0)
+    _currentInfo(Data::Info(0.0f, 0.0f, 0.0f, 0.0f)),
+    _startTick(0),
+    _cumulatedServerTicks(0),
+    _cumulatedGameTicks(0)
 {
     // num/den is the period in seconds, den/num is therefore the frequency in hertz
     auto ticks_per_s = (static_cast<float>(std::chrono::high_resolution_clock::period::den) / std::chrono::high_resolution_clock::period::num);
@@ -168,7 +170,7 @@ void HighwayPursuitServer::Reset(bool startNewGame)
         // New game is called on the first episode because it fully resets the game state
         _episodeService->NewGame();
         // Initialize the metrics
-        _currentInfo = Info(0.0f, ComputeMemoryUsage());
+        _currentInfo = Info(0.0f, ComputeMemoryUsage(), _cumulatedServerTicks, _cumulatedGameTicks);
         _firstEpisodeInitialized = true;
     }
     // Start a new game
@@ -227,6 +229,9 @@ void HighwayPursuitServer::ExecuteForOneFrame(std::function<void()> action)
 
 void HighwayPursuitServer::Step(std::function<void(std::function<void()>)> frameWrapper)
 {
+    // Time spent server-side measurement
+    ULONGLONG serverComputationStart = GetTickCount64();
+
     // Get action
     std::vector<Input> actions = _communicationManager->ReadActions();
 
@@ -235,8 +240,11 @@ void HighwayPursuitServer::Step(std::function<void(std::function<void()>)> frame
     auto processFrame = [this, actions, &cumulatedReward]()
         {
             _inputService->SetInput(actions);
+
             // Apply action and get next state
+            ULONGLONG gameComputationStart = GetTickCount64();
             WaitGameUpdate();
+            _cumulatedGameTicks += GetTickCount64() - gameComputationStart; // measure time spent on running the game
 
             // Get reward
             int reward = _scoreService->PullReward();
@@ -250,8 +258,18 @@ void HighwayPursuitServer::Step(std::function<void(std::function<void()>)> frame
             bool terminated = _episodeService->PullTerminated();
             _lastStepTermination = Termination(terminated, false);
 
-            // Handle the computation of useful metrics
-            HandleMetrics();
+            // Handle the metrics that are computed periodically
+            if (_totalEllapsedFrames % PERIODIC_METRICS_FREQUENCY == 0)
+            {
+                ULONGLONG elapsedTicks = GetTickCount64() - _startTick;
+                auto tps = PERIODIC_METRICS_FREQUENCY / (elapsedTicks / 1000.0f);
+
+                float memorySize = ComputeMemoryUsage();
+                _startTick = GetTickCount64();
+
+                _currentInfo.memory = memorySize;
+                _currentInfo.tps = tps;
+            }
         };
 
     int skippedFrames = 0;
@@ -275,23 +293,18 @@ void HighwayPursuitServer::Step(std::function<void(std::function<void()>)> frame
         {
             _communicationManager->WriteObservationBuffer(pixelData, format);
         });
+
+    // Stop server-side timer
+    _cumulatedServerTicks += GetTickCount64() - serverComputationStart;
+
+    // Update metrics
+    float serverTime = _cumulatedServerTicks / 1000.0f;
+    float gameTime = _cumulatedGameTicks / 1000.0f;
+    _currentInfo = Info(_currentInfo.tps, _currentInfo.memory, serverTime, gameTime);
+
     _communicationManager->WriteRewardBuffer(Reward(static_cast<float>(cumulatedReward)));
     _communicationManager->WriteInfoBuffer(_currentInfo);
     _communicationManager->WriteTerminationBuffer(_lastStepTermination);
-}
-
-void HighwayPursuitServer::HandleMetrics()
-{
-    // Performance metrics
-    if (_totalEllapsedFrames % METRICS_UPDATE_FREQUENCY == 0)
-    {
-        ULONGLONG elapsedTicks = GetTickCount64() - _startTick;
-        auto tps = METRICS_UPDATE_FREQUENCY / (elapsedTicks / 1000.0f);
-
-        float memorySize = ComputeMemoryUsage();
-        _currentInfo = Info(tps, memorySize);
-        _startTick = GetTickCount64();
-    }
 }
 
 float HighwayPursuitServer::ComputeMemoryUsage()

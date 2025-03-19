@@ -22,12 +22,16 @@ class Info(ctypes.Structure):
     _fields_ = (
         ('tps', ctypes.c_float),
         ('memory', ctypes.c_float),
+        ('server_time', ctypes.c_float),
+        ('game_time', ctypes.c_float),
     )
 
     def to_dict(self):
         return {
                 "tps": self.tps,
-                "memory_usage": self.memory
+                "memory_usage": self.memory,
+                "server_time": self.server_time,
+                "game_time": self.game_time
             }
 
 class Reward(ctypes.Structure):
