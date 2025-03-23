@@ -64,7 +64,7 @@ class HighwayPursuitEnv(gym.Env):
         self._last_observation = None
 
         # gym env members
-        self.observation_space = gym.spaces.Box(low=0, high=255, dtype=int, shape=image_shape)
+        self.observation_space = gym.spaces.Box(low=0, high=255, dtype=np.uint8, shape=image_shape)
         self.action_space = gym.spaces.MultiBinary(action_count)
         assert render_mode is None or render_mode in self.metadata["render_modes"]
         self.render_mode = render_mode
@@ -164,7 +164,6 @@ class HighwayPursuitEnv(gym.Env):
 
         # Update total ellapsed steps
         self._server_total_ellapsed_steps += 1
-
         return observation, reward, terminated, truncated, info
 
     def render(self):

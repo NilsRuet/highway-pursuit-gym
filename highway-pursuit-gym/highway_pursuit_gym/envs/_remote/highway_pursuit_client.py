@@ -252,7 +252,7 @@ class HighwayPursuitClient:
         reward: Reward = Reward.from_buffer_copy(self._reward_sm.buf)
         info: Info = Info.from_buffer_copy(self._info_sm.buf)
         termination: Termination = Termination.from_buffer_copy(self._termination_sm.buf)
-        return observation, reward.reward, termination.terminated, termination.truncated, info.to_dict()
+        return observation, reward.reward, bool(termination.terminated), bool(termination.truncated), info.to_dict()
 
     def _read_observation(self):
         """
