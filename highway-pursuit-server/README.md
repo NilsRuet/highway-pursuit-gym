@@ -1,4 +1,4 @@
-## What is "Highway Pursuit server". 
+## Highway Pursuit server 
 This project is the server/game side of the python gymnasium env that interacts with Highway Pursuit (v1.2.3, Windows 10/Windows 11).
 It contains:
 - A project that builds a to-be-injected DLL that fully synchronizes the game with commands received from the python env.
