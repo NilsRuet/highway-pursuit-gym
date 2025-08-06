@@ -6,9 +6,9 @@ This package provides a custom Gymnasium-compatible interface for interacting wi
 Requires python 3.11 or newer.
 
 Installing the python gym env:
-`git clone https://github.com/exyl-exe/highway-pursuit-gym`
-`cd highway_pursuit_gym\highway_pursuit_gym`
-`pip install .`
+- `git clone https://github.com/exyl-exe/highway-pursuit-gym`
+- `cd highway_pursuit_gym\highway_pursuit_gym`
+- `pip install .`
 
 ## Checking the installation
 The basic environment test requires matplotlib, which can be installed with:
@@ -20,10 +20,10 @@ Before running the environment, you need to set three environment variables to s
 -`HP_APP_PATH`: Path to the game executable
 
 For instance, using Powershell:
-`$env:HP_LAUNCHER_PATH = "C:\path\to\launcher.exe"`
-`$env:HP_APP_PATH = "C:\path\to\game.exe"`
-`$env:HP_DLL_PATH = "C:\path\to\inject.dll"`
-`python tests/basic_env_test.py`
+-`$env:HP_LAUNCHER_PATH = "C:\path\to\launcher.exe"`
+-`$env:HP_APP_PATH = "C:\path\to\game.exe"`
+-`$env:HP_DLL_PATH = "C:\path\to\inject.dll"`
+-`python tests/basic_env_test.py`
 
 This script will:
     - Launch the game
