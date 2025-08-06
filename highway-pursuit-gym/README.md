@@ -1,5 +1,5 @@
 # Highway Pursuit gym
-This package provides a custom Gymnasium-compatible interface for interacting with the game _Highway Pursuit_ by Adam Dawes. This works in tandem with the Highway Pursuit Server (from the same repo), and requires an install of Highway Pursuit v1.2.3, as well as the server's launcher and dll.
+This package provides a custom Gymnasium-compatible interface for interacting with the game _Highway Pursuit_ by Adam Dawes. This works in tandem with the Highway Pursuit Server (from the same repo), and requires an install of Highway Pursuit v1.2.3, as well as the server's launcher and dll. Refer to the README in `highwayt-pursuit-server` to build the launcher and dll.
 
 ## Installation
 
