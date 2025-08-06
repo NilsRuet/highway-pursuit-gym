@@ -14,7 +14,7 @@ namespace Injected
         void NotifyShutdown();
 
     private:
-        static constexpr int SERVER_TIMEOUT = 30000; // To avoid waiting infinitely
+        static constexpr int SERVER_TIMEOUT = 300000; // To avoid waiting infinitely
 
         // Members
         std::shared_ptr<HookManager> _hookManager;

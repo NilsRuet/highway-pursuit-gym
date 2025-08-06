@@ -8,7 +8,7 @@ using namespace Data;
 class CommunicationManager
 {
 public:
-    static constexpr uint32_t CLIENT_TIMEOUT = 60000; // Timeout in ms
+    static constexpr uint32_t CLIENT_TIMEOUT = 300000; // Timeout in ms
 
     CommunicationManager(const ServerParams& args);
     ~CommunicationManager();

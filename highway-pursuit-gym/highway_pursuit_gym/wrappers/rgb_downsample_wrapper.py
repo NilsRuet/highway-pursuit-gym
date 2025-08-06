@@ -1,9 +1,9 @@
 import gymnasium as gym
 import numpy as np
 
-class ChannelsAsStripsWrapper(gym.ObservationWrapper):
+class RGBDownsampleWrapper(gym.ObservationWrapper):
     def __init__(self, env):
-        super(ChannelsAsStripsWrapper, self).__init__(env)
+        super(RGBDownsampleWrapper, self).__init__(env)
         # Assuming the observation space is Box with shape (height, width, channels)
         old_shape = (
             self.observation_space.shape
