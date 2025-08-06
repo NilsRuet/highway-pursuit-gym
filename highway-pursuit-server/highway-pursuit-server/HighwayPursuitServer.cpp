@@ -170,7 +170,7 @@ void HighwayPursuitServer::Reset(bool startNewGame)
         // New game is called on the first episode because it fully resets the game state
         _episodeService->NewGame();
         // Initialize the metrics
-        _currentInfo = Info(0.0f, ComputeMemoryUsage(), _cumulatedServerTicks, _cumulatedGameTicks);
+        _currentInfo = Info(0.0f, ComputeMemoryUsage(), static_cast<float>(_cumulatedServerTicks), static_cast<float>(_cumulatedGameTicks));
         _firstEpisodeInitialized = true;
     }
     // Start a new game
