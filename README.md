@@ -1,6 +1,6 @@
 # Highway Pursuit Gym Environment
 
-This repository provides a Python RL Gymnasium environment for the game *Highway Pursuit* by Adam Dawes, currently supporting version **1.2.3**.
+This repository provides a Python RL Gymnasium environment for the game *Highway Pursuit* by Adam Dawes, currently supporting version **1.2.3** and Windows 10.
 
 **Note:** The game is available on [Adam Dawes’ website](https://adamdawes.com/games/highway-pursuit.html), but the latest release (1.2.4) is not compatible with this environment.
 
