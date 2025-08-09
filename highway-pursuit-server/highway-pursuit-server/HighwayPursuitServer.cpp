@@ -68,6 +68,8 @@ void HighwayPursuitServer::Run()
     {
         // Wait for game to be initialized
         WaitGameUpdate();
+        // Enable custom qpc
+        _updateService->EnableCustomTime();
         SkipIntro();
 
         // Get server info now that the D3D device is initialized

@@ -12,11 +12,17 @@ namespace Injected
         _FPS(FPS),
         _performanceCounterFrequency(performanceCounterFrequency),
         _performanceCounter(),
-        _useSemaphores(true)
+        _useSemaphores(true),
+        _enabled(false)
     {
         _counterTicksPerFrame = static_cast<long>(std::ceil(_performanceCounterFrequency.QuadPart / _FPS));
         _performanceCounter.QuadPart = 0;
         RegisterHooks();
+    }
+
+    void UpdateService::EnableCustomTime()
+    {
+        _enabled = true;
     }
 
     void UpdateService::UpdateTime()
@@ -80,11 +86,16 @@ namespace Injected
         {
             throw std::runtime_error("QueryPerformanceCounter_Hook called in real time mode.");
         }
-        if (_performanceCounter.QuadPart == 0)
+
+        // When uninitialized/on first call
+        // The counter is set to the actual value (avoid disturbing other processed that rely on it until activation)
+        if (_performanceCounter.QuadPart == 0 || !_enabled)
         {
             res = QueryPerformanceCounter_Base(&_performanceCounter);
         }
+        
         *lpPerformanceCount = _performanceCounter;
+
         return res;
     }
 

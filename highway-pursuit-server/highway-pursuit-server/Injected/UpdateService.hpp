@@ -12,6 +12,7 @@ namespace Injected
         // Methods
         void UpdateTime();
         void NotifyShutdown();
+        void EnableCustomTime();
 
     private:
         static constexpr int SERVER_TIMEOUT = 300000; // To avoid waiting infinitely
@@ -26,6 +27,7 @@ namespace Injected
         LARGE_INTEGER _performanceCounter;
         long _counterTicksPerFrame;
         bool _useSemaphores;
+        bool _enabled;
 
         void RegisterHooks();
 
