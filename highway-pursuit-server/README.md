@@ -12,3 +12,8 @@ For instance, using CMake to build a Visual Studio 2022 solution and compile the
 - `cmake --build build-x86 --config Debug` / `cmake --build build-x86 --config Release` (compile the projects)
 
 The executable and dlls can then be found in `\build-x86\output\bin\Debug` (or `Release`).
+
+## Structure
+- `highway-pursuit-launcher` contains the project that starts and initializes the game/server. Entry point is `HighwayPursuitLauncher.cpp`.
+- `highway-pursuit-server` contains the server that receives and executes instructions and interfaces with the game. Entry points are the methods `Initialize` and `Run` in `dllmain.cpp`.
+- `minhook` is a dependency for creating and managing hooks.
