@@ -4,7 +4,7 @@ An in-depth presentation of the project is available on my [website](https://nil
 
 This repository provides a Python RL Gymnasium environment for the game *Highway Pursuit* by Adam Dawes, currently supporting version **1.2.3** and Windows 10.
 
-The version of the game that is compatible with the game can be downloaded [here](http://retrospec.sgn.net/files/HighwayPursuit1_2.exe). I have also included a copy of the installer in the releases of this repository.
+The version of the game that is compatible with the game can be downloaded [here](https://retrospec.sgn.net/files/HighwayPursuit1_2.exe). I have also included a copy of the installer in the releases of this repository.
 
 > **Note:** The latest version (NOT compatible with this project) is available on [Adam Dawes’ website](https://adamdawes.com/games/highway-pursuit.html).
 
