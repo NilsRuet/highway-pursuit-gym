@@ -2,7 +2,7 @@
 
 An in-depth presentation of the project is available on my [website](https://nilsruet.github.io/projects/highway-pursuit-rl/).
 
-This repository provides a Python RL Gymnasium environment for the game *Highway Pursuit* by Adam Dawes, currently supporting version **1.2.3** and Windows 10.
+This repository provides a Python RL Gymnasium environment for the game *Highway Pursuit* by Adam Dawes, currently supporting version **1.2.3** and Windows 10/11.
 
 The version of the game that is compatible with the game can be downloaded [here](https://retrospec.sgn.net/files/HighwayPursuit1_2.exe). I have also included a copy of the installer in the releases of this repository.
 
@@ -14,3 +14,5 @@ The project consists of two main components:
 - **Mod/DLL:** Injected into the game to enable server functionality for communication.
 
 Both components are required and should be installed together. Installation instructions are provided in the README files located in each subfolder.
+
+The project also features an `examples` folder containing an example of use of the library with a PPO implementation by [Weight & Biases](https://github.com/vwxyzjn/ppo-implementation-details) modified for better profiling.
