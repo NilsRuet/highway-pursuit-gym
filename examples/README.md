@@ -1,3 +1,5 @@
+# Training a PPO agent on Highway Pursuit
+
 This folder contains an example use of the custom environment by an implementation of PPO by [Weight & Biases](https://github.com/vwxyzjn/ppo-implementation-details).
 The dependencies can be installed with:
 - `pip install -r requirements.txt`
