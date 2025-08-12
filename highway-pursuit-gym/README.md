@@ -8,7 +8,7 @@ Requires python 3.11 or newer.
 Installing the python gym env:
 - `git clone https://github.com/exyl-exe/highway-pursuit-gym`
 - `cd highway_pursuit_gym\highway_pursuit_gym`
-- `pip install .`
+- `pip install .` / `pip install -e .` (development)
 
 ## Checking the installation
 The basic environment test requires matplotlib, which can be installed with:
