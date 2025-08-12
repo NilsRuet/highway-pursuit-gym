@@ -57,8 +57,11 @@ class HighwayPursuitEnv(gym.Env):
         image_shape, action_count = self._client.create_process_and_connect()
 
         # Process monitoring
-        self._server_total_ellapsed_steps = 0
-        self._last_info = None
+        self._server_total_elapsed_steps = 0
+        self._last_info = None # last info returned by the server
+
+        # Keep track of cumulated time across instances for profiling
+        self._cumulated_info = { "server_time" : 0, "game_time" : 0 }
 
         # render options
         self._last_observation = None
@@ -84,20 +87,20 @@ class HighwayPursuitEnv(gym.Env):
         self._client = HighwayPursuitClient(self._launcher_path, self._highway_pursuit_path, self._dll_path, self._options)
         self._client.create_process_and_connect()
 
-        self._server_total_ellapsed_steps = 0
+        self._server_total_elapsed_steps = 0
 
     def _should_restart_server(self):
         """
-        Checks if the server should be restarted e.g. high memory usage or enough steps ellapsed.
+        Checks if the server should be restarted e.g. high memory usage or enough steps elapsed.
         """
-        time_ellapsed = self._server_total_ellapsed_steps > self._options["server_restart_frequency"]
+        time_elapsed = self._server_total_elapsed_steps > self._options["server_restart_frequency"]
         
         if(self._last_info != None):
             memory_usage_too_high = self._last_info["memory_usage"] > self._options["max_memory_usage"]
         else:
             memory_usage_too_high = False
 
-        return time_ellapsed or memory_usage_too_high
+        return time_elapsed or memory_usage_too_high
 
     def reset(self, seed=None, options: dict = {"new_game": False}):
         """
@@ -123,6 +126,14 @@ class HighwayPursuitEnv(gym.Env):
             self._restart_server()
             has_restarted = True
 
+            # Update cumulated infos for profiling
+            if("server_time" in self._last_info and "game_time" in self._last_info):
+                self._cumulated_info["server_time"] += self._last_info["server_time"]
+                self._cumulated_info["game_time"] += self._last_info["game_time"]
+            else:
+                warn("Server didn't return server_time/game_time before restarting")
+
+        # if new_game is True it restarts a game in Highway Pursuit, otherwise it simply respawns the player
         new_game = False
         if options != None:
             new_game = options.get("new_game", False)
@@ -137,6 +148,10 @@ class HighwayPursuitEnv(gym.Env):
         # update state
         self._last_observation = observation
         self._last_info = info
+
+        # update info to account for past server instances
+        info["server_time"] += self._cumulated_info["server_time"]
+        info["game_time"] += self._cumulated_info["game_time"]
 
         return observation, info
 
@@ -162,8 +177,12 @@ class HighwayPursuitEnv(gym.Env):
         self._last_observation = observation
         self._last_info = info
 
-        # Update total ellapsed steps
-        self._server_total_ellapsed_steps += 1
+         # update info to account for past server instances
+        info["server_time"] += self._cumulated_info["server_time"]
+        info["game_time"] += self._cumulated_info["game_time"]
+
+        # Update total elapsed steps
+        self._server_total_elapsed_steps += 1
         return observation, reward, terminated, truncated, info
 
     def render(self):
